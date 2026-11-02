@@ -17818,5 +17818,165 @@ if (EN) { const HTML_EN = {"garsas ·": "sound ·", "grafika": "graphics", "Biom
   const tr = root => { const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) { const t = n.nodeValue.trim(); if (t && HTML_EN[t]) n.nodeValue = n.nodeValue.replace(t, HTML_EN[t]); }
     root.querySelectorAll && root.querySelectorAll('[title],[placeholder],[aria-label],[alt]').forEach(e => { for (const a of ['title', 'placeholder', 'aria-label', 'alt']) { const v = e.getAttribute(a); if (v && HTML_EN[v.trim()]) e.setAttribute(a, HTML_EN[v.trim()]); } }); };
   tr(document.body); document.documentElement.lang = 'en'; window.__trHTML = tr; }
+
+// ================= MULTIPLAYER 🌐 (online, up to 4 players) =================
+// One player creates a room and gets a 4-letter code; up to 3 friends join with that code (PeerJS: direct
+// browser-to-browser connections, the public PeerJS server only introduces the players to each other).
+// You see each other in every world. The more players, the HARDER it gets: bosses have more HP, hit harder
+// and attack more often. Damage on the Family Arena bosses and the Great Bat is shared between the players.
+const mpL = (lt, en) => EN ? en : lt;
+const MP = { on: false, host: false, peer: null, conns: [], conn: null, code: '', name: '', peers: new Map(), myId: '', n: 1, el: null, hud: null, sendT: 0, remote: false, lib: null };
+const MP_COLS = ['#7ad86a', '#4ab0ff', '#ff8ab8', '#ffd23a'];
+const mpHpMul = () => 1 + 0.75 * (MP.n - 1), mpDmgMul = () => 1 + 0.25 * (MP.n - 1), mpRateMul = () => 1 + 0.2 * (MP.n - 1);
+function mpCfg() { const c = { debug: 0 }; try { const s = JSON.parse(localStorage.getItem('modly-mpserver') || 'null'); if (s) Object.assign(c, s); } catch (_) { } return c; }
+function mpLoadLib() {
+  if (window.Peer) return Promise.resolve(); if (MP.lib) return MP.lib;
+  let src = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'; try { src = localStorage.getItem('modly-mpjs') || src; } catch (_) { }
+  MP.lib = new Promise((ok, bad) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => { MP.lib = null; bad(new Error('lib')); }; document.head.appendChild(s); });
+  return MP.lib;
+}
+function mpMyName() { let n = ''; try { n = (MP.el && MP.el.querySelector('[data-nm]') && MP.el.querySelector('[data-nm]').value.trim()) || ''; } catch (_) { } if (!n && typeof AC !== 'undefined' && AC.active) n = (AC.list[AC.active] || {}).name || AC.active; return (n || mpL('Žaidėjas', 'Player')).slice(0, 16); }
+function mpCode() { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let s = ''; for (let i = 0; i < 4; i++) s += a[Math.floor(Math.random() * a.length)]; return s; }
+const mpPid = c => 'modlyworld-room-' + c.toLowerCase();
+async function mpHost() {
+  try { await mpLoadLib(); } catch (_) { return mpMsg(mpL('Nepavyko įkelti multiplayer – patikrink internetą', 'Could not load multiplayer – check the internet')); }
+  mpLeave(true); MP.name = mpMyName(); const code = mpCode(); mpMsg(mpL('Kuriamas kambarys…', 'Creating a room…'), '#ffe14d');
+  const p = MP.peer = new Peer(mpPid(code), mpCfg());
+  p.on('open', id => { MP.on = true; MP.host = true; MP.code = code; MP.myId = id; MP.n = 1; mpPanel(); toast(mpL('🌐 Kambarys sukurtas!', '🌐 Room created!'), mpL(`Kodas: ${code} – pasakyk jį draugams (iki 3)`, `Code: ${code} – tell it to your friends (up to 3)`), '#4ab0ff'); });
+  p.on('connection', c => {
+    c.on('open', () => { if (MP.conns.length >= 3) { c.send({ t: 'full' }); setTimeout(() => c.close(), 300); return; } MP.conns.push(c); c.send({ t: 'hi', code: MP.code }); });
+    c.on('data', d => mpOnData(d, c));
+    c.on('close', () => { MP.conns = MP.conns.filter(x => x !== c); const r = MP.peers.get(c.peer); if (r) { mpDrop(c.peer); toast('🌐 ' + mpL(`${r.name} išėjo`, `${r.name} left`), '', '#4ab0ff'); } mpPanel(); });
+  });
+  p.on('error', e => { if (String(e.type) === 'unavailable-id') { mpLeave(true); mpHost(); return; } mpMsg(mpL('Klaida: ', 'Error: ') + (e.type || e.message)); });
+}
+async function mpJoin(code) {
+  code = (code || '').trim().toUpperCase(); if (!/^[A-Z]{4}$/.test(code)) return mpMsg(mpL('Kodas – 4 raidės', 'The code is 4 letters'));
+  try { await mpLoadLib(); } catch (_) { return mpMsg(mpL('Nepavyko įkelti multiplayer – patikrink internetą', 'Could not load multiplayer – check the internet')); }
+  mpLeave(true); MP.name = mpMyName(); mpMsg(mpL('Jungiamasi…', 'Connecting…'), '#ffe14d');
+  const p = MP.peer = new Peer(undefined, mpCfg());
+  p.on('open', id => { MP.myId = id; const c = MP.conn = p.connect(mpPid(code), { reliable: true });
+    c.on('open', () => { MP.on = true; MP.host = false; MP.code = code; mpPanel(); toast(mpL('🌐 Prisijungei!', '🌐 Joined!'), mpL(`Kambarys ${code}`, `Room ${code}`), '#4ab0ff'); });
+    c.on('data', d => mpOnData(d, c));
+    c.on('close', () => { if (MP.on) toast(mpL('🌐 Kambarys uždarytas', '🌐 The room was closed'), mpL('Žaidi vienas', 'You play alone'), '#4ab0ff'); mpLeave(true); mpPanel(); }); });
+  p.on('error', e => { mpMsg(String(e.type) === 'peer-unavailable' ? mpL('Tokio kambario nėra', 'No room with that code') : mpL('Klaida: ', 'Error: ') + (e.type || e.message)); mpLeave(true); });
+}
+function mpLeave(quiet) {
+  try { MP.conns.forEach(c => c.close()); if (MP.conn) MP.conn.close(); if (MP.peer) MP.peer.destroy(); } catch (_) { }
+  MP.conns = []; MP.conn = null; MP.peer = null; MP.on = false; MP.host = false; MP.code = ''; MP.n = 1;
+  [...MP.peers.keys()].forEach(mpDrop); if (!quiet) { toast(mpL('🌐 Išėjai iš kambario', '🌐 You left the room'), '', '#4ab0ff'); mpPanel(); }
+}
+function mpDrop(id) { const r = MP.peers.get(id); if (r && r.g && r.g.parent) r.g.parent.remove(r.g); MP.peers.delete(id); }
+function mpState() { return { id: MP.myId, name: MP.name, m: mode, p: [player.pos.x, player.pos.y, player.pos.z], f: [player.fwd.x, player.fwd.y, player.fwd.z] }; }
+function mpSend(d) { try { if (MP.host) MP.conns.forEach(c => c.open && c.send(d)); else if (MP.conn && MP.conn.open) MP.conn.send(d); } catch (_) { } }
+function mpOnData(d, c) {
+  if (!d || typeof d !== 'object') return;
+  if (d.t === 'full') { mpMsg(mpL('Kambarys pilnas (4 žaidėjai)', 'The room is full (4 players)')); toast(mpL('🌐 Kambarys pilnas', '🌐 The room is full'), mpL('Jame jau 4 žaidėjai', 'There are already 4 players'), '#ff5a5a'); mpLeave(true); mpPanel(); return; }
+  if (d.t === 'st' && MP.host) { d.id = c.peer; mpPut(d); return; }
+  if (d.t === 'all' && !MP.host) { const seen = new Set(); d.l.forEach(s => { if (s.id === MP.myId) return; seen.add(s.id); mpPut(s); }); [...MP.peers.keys()].forEach(k => { if (!seen.has(k)) mpDrop(k); }); MP.n = d.l.length; return; }
+  if (d.t === 'ev') { if (MP.host) MP.conns.forEach(x => { if (x !== c && x.open) x.send(d); }); mpEvent(d); }
+}
+function mpPut(s) {
+  let r = MP.peers.get(s.id); const isNew = !r;
+  if (!r) { r = { id: s.id, g: null, pos: new V3(s.p[0], s.p[1], s.p[2]), last: new V3(), ph: 0 }; MP.peers.set(s.id, r); }
+  r.name = String(s.name || '?').slice(0, 16); r.m = s.m; r.tp = new V3(s.p[0], s.p[1], s.p[2]); r.tf = new V3(s.f[0], s.f[1], s.f[2]); if (r.m !== r.lastM) { r.pos.copy(r.tp); r.lastM = r.m; }
+  if (isNew) { toast('🌐 ' + mpL(`${r.name} prisijungė!`, `${r.name} joined!`), mpL('Dabar sunkiau! 💪', 'Now it is harder! 💪'), '#4ab0ff'); if (MP.el && !MP.el.hidden) mpPanel(); }
+}
+function mpNameTex(t, col) { const c = document.createElement('canvas'); c.width = 256; c.height = 64; const x = c.getContext('2d'); x.font = "bold 34px 'Lilita One', sans-serif"; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineWidth = 6; x.strokeStyle = '#000'; x.strokeText(t, 128, 34); x.fillStyle = col; x.fillText(t, 128, 34); return new THREE.CanvasTexture(c); }
+function mpModel(r) {
+  const col = MP_COLS[Math.abs([...r.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7)) % 4];
+  const g = makeFolkFig({ head: 1, eyes: 1, nose: 0.6, mouth: 1, arms: 1, legs: 1, chest: 0.85, color: col }, null, false); g.scale.setScalar(0.85);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: mpNameTex(r.name, col), transparent: true, depthWrite: false })); s.scale.set(2.4, 0.6, 1); s.position.y = g.userData.h + 0.6; g.add(s); r.label = s; r.col = col;
+  return g;
+}
+// remote players appear in the scene that is being drawn (if they are in the same world as you)
+{ const _r = renderer.render.bind(renderer); renderer.render = (sc, cam) => { try { if (MP.on) mpPlace(sc); } catch (e) { } return _r(sc, cam); }; }
+let mpLastT = performance.now();
+function mpPlace(sc) {
+  const now = performance.now(), dt = Math.min(0.1, (now - mpLastT) / 1000); mpLastT = now;
+  for (const r of MP.peers.values()) {
+    const here = started && r.m === mode && mode !== 'attract' && r.tp;
+    if (!here) { if (r.g && r.g.parent) r.g.parent.remove(r.g); continue; }
+    if (!r.g) r.g = mpModel(r); if (r.g.parent !== sc) { sc.add(r.g); r.pos.copy(r.tp); }
+    r.last.copy(r.pos); r.pos.lerp(r.tp, Math.min(1, dt * 10)); const sp = r.last.distanceTo(r.pos) / Math.max(dt, 1e-3);
+    r.g.position.copy(r.pos);
+    if (mode === 'planet') { const up = r.pos.clone().normalize(); orient(r.g, up, tangentToward(up, r.pos.clone().add(r.tf))); }
+    else { r.g.quaternion.identity(); r.g.rotation.y = Math.atan2(r.tf.x, r.tf.z); }
+    r.ph += dt * Math.min(12, sp * 1.6); const sw = sp > 0.5 ? Math.sin(r.ph) * 0.6 : 0, u = r.g.userData;
+    if (u.legs) { u.legs[0].rotation.x = sw; u.legs[1].rotation.x = -sw; u.arms[0].rotation.x = -sw * 0.8; u.arms[1].rotation.x = sw * 0.8; }
+  }
+}
+// network tick: 10 times per second
+fx.push(dt => {
+  if (!MP.on) { if (MP.hud) MP.hud.hidden = true; return true; }
+  MP.sendT -= dt; if (MP.sendT <= 0) { MP.sendT = 0.1; MP.name = MP.name || mpMyName();
+    if (MP.host) { const l = [mpState(), ...[...MP.peers.values()].filter(r => r.tp).map(r => ({ id: r.id, name: r.name, m: r.m, p: [r.tp.x, r.tp.y, r.tp.z], f: [r.tf.x, r.tf.y, r.tf.z] }))]; MP.n = l.length; mpSend({ t: 'all', l }); }
+    else mpSend(Object.assign({ t: 'st' }, mpState())); }
+  mpHud(); return true;
+});
+function mpHud() {
+  if (!MP.hud) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;right:12px;bottom:58px;z-index:6;background:rgba(20,30,60,.82);color:#fff;border:1px solid rgba(74,176,255,.6);border-radius:12px;padding:6px 10px;font:700 13px system-ui,sans-serif;pointer-events:none;text-align:right'; document.body.appendChild(d); MP.hud = d; }
+  MP.hud.hidden = false; const k = MP.code + MP.n + EN + [...MP.peers.values()].map(r => r.name + r.m).join(); if (k === MP.hudK) return; MP.hudK = k;
+  const here = [...MP.peers.values()].filter(r => r.m === mode).length;
+  MP.hud.innerHTML = `🌐 ${mpL('Kambarys', 'Room')} <b>${MP.code}</b> · 👥 ${MP.n}/4${here ? ` · ${mpL('šalia', 'here')}: ${here}` : ''}<br><span style="color:#ffb84a">💪 ${mpL('Sunkumas', 'Difficulty')} ×${mpHpMul().toFixed(2)}</span> <small style="opacity:.7">· N – ${mpL('meniu', 'menu')}</small>`;
+}
+// ---------- the harder the more players ----------
+fx.push(() => {
+  // Family Arena bosses
+  if (typeof FM_BOSS !== 'undefined') FM_BOSS.forEach((B, i) => {
+    if (B.baseHp == null) { B.baseHp = B.hp; B.baseDmg = B.dmg; B.baseAtk = Object.assign({}, B.atk); }
+    const hp = Math.round(B.baseHp * mpHpMul()); if (B.hp !== hp) { if (FM.B === B && mode === 'fam' && !FM.dead) FM.hp = Math.max(1, Math.round(FM.hp * hp / B.hp)); B.hp = hp; FM.hudKey = null; }
+    B.dmg = Math.round(B.baseDmg * mpDmgMul()); const rm = mpRateMul(); for (const k of ['ball', 'ring', 'zone']) if (B.baseAtk[k]) B.atk[k] = B.baseAtk[k] / rm;
+    B.atk.torn = B.baseAtk.torn ? B.baseAtk.torn + (MP.n >= 3 ? 1 : 0) : 0;
+  });
+  // the Great Bat
+  if (typeof BAT !== 'undefined') { const mx = Math.round(1000 * mpHpMul()); if (BAT.max !== mx) { BAT.hp = Math.max(BAT.dead ? 0 : 1, Math.round(BAT.hp * mx / BAT.max)); BAT.max = mx; } }
+  return true;
+});
+{ const _p = playerHurt; playerHurt = n => _p(Math.round(n * mpDmgMul())); }
+// shared damage on bosses
+{ const _h = famHurtBoss; famHurtBoss = (n, big) => { const r = _h(n, big); if (MP.on && !MP.remote && mode === 'fam') mpSend({ t: 'ev', k: 'fam', b: FAM.boss, n, from: MP.name }); return r; }; }
+{ const _h = batHit; batHit = (n, from) => { const ok = batOn() && BAT.m; const r = _h(n, from); if (ok && MP.on && !MP.remote) mpSend({ t: 'ev', k: 'bat', n, from: MP.name }); return r; }; }
+function mpEvent(d) {
+  MP.remote = true;
+  try { if (d.k === 'fam' && mode === 'fam' && FAM.boss === d.b && !FM.dead && FM.boss) famHurtBoss(Math.round(+d.n) || 0, false);
+    else if (d.k === 'bat' && batOn() && BAT.m) batHit(Math.round(+d.n) || 0, 'friend'); } catch (e) { console.error(e); }
+  MP.remote = false;
+}
+// ---------- the multiplayer window ----------
+{ const _o = openPause; openPause = (...a) => { if (MP.el && !MP.el.hidden) return; return _o(...a); }; }
+function mpMsg(t, c) { const m = MP.el && MP.el.querySelector('.mpmsg'); if (m) { m.textContent = t; m.style.color = c || '#ff8a8a'; } }
+function mpOpen() {
+  if (!MP.el) { const d = document.createElement('div'); d.id = 'mpWin'; d.style.cssText = 'position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;background:rgba(8,12,30,.6);font:600 15px system-ui,sans-serif;color:#fff';
+    ['keydown', 'keyup', 'mousedown', 'click', 'wheel'].forEach(ev => d.addEventListener(ev, e => e.stopPropagation())); d.addEventListener('mousedown', e => { if (e.target === d) mpClose(); }); document.body.appendChild(d); MP.el = d; }
+  MP.el.hidden = false; if (started) { card = card || { kind: 'mp' }; for (const k in keys) keys[k] = false; try { document.exitPointerLock && document.exitPointerLock(); } catch (_) { } } mpPanel();
+}
+function mpClose() { if (!MP.el) return; MP.el.hidden = true; if (card && card.kind === 'mp') card = null; if (started && !lockFailed) requestLock(); }
+function mpPanel() {
+  if (!MP.el || MP.el.hidden) return; const B = 'width:100%;padding:12px;margin-top:8px;border-radius:12px;border:none;font:800 16px system-ui;cursor:pointer';
+  const list = [`<li style="color:#9aff7a">${MP.name || mpMyName()} (${mpL('tu', 'you')})</li>`, ...[...MP.peers.values()].map(r => `<li>${r.name}</li>`)].join('');
+  MP.el.innerHTML = `<div style="width:min(400px,calc(100vw - 32px));background:rgba(20,28,60,.97);border:1px solid rgba(74,176,255,.6);border-radius:20px;padding:20px;text-align:center">
+    <div style="font:400 30px 'Lilita One',system-ui;color:#4ab0ff">🌐 Multiplayer</div><div style="opacity:.75;margin:4px 0 10px">${mpL('Žaisk internetu su draugais – iki 4 žaidėjų', 'Play online with friends – up to 4 players')}</div>`
+    + (MP.on ? `<div style="font-size:13px;opacity:.7">${mpL('Kambario kodas', 'Room code')}</div><div style="font:400 46px 'Lilita One',system-ui;letter-spacing:6px;color:#ffe14d">${MP.code}</div>
+      <div style="text-align:left;margin:8px 0"><b>👥 ${mpL('Žaidėjai', 'Players')} ${MP.n}/4</b><ul style="margin:6px 0 0 18px;padding:0">${list}</ul></div>
+      <div style="color:#ffb84a;font-size:14px">💪 ${mpL('Sunkumas', 'Difficulty')} ×${mpHpMul().toFixed(2)} – ${mpL('bosai turi daugiau gyvybių, smogia stipriau ir dažniau', 'bosses have more HP, hit harder and more often')}</div>
+      <button data-leave style="${B};background:#ff6a5a;color:#fff">🚪 ${mpL('Išeiti iš kambario', 'Leave the room')}</button>`
+    : `<input data-nm maxlength="16" value="${(MP.name || mpMyName()).replace(/"/g, '')}" placeholder="${mpL('Tavo vardas', 'Your name')}" style="width:100%;box-sizing:border-box;padding:11px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.3);color:#fff;font:600 16px system-ui">
+      <button data-host style="${B};background:#9aff7a;color:#13301a">✨ ${mpL('Sukurti kambarį', 'Create a room')}</button>
+      <div style="display:flex;gap:8px;margin-top:8px"><input data-code maxlength="4" placeholder="${mpL('KODAS', 'CODE')}" style="flex:1;min-width:0;padding:11px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.3);color:#fff;font:800 18px system-ui;text-transform:uppercase;letter-spacing:4px;text-align:center"><button data-join style="padding:11px 14px;border-radius:12px;border:none;background:#ffe14d;color:#3a2a00;font:800 16px system-ui;cursor:pointer">🔑 ${mpL('Prisijungti', 'Join')}</button></div>
+      <div style="font-size:13px;opacity:.7;margin-top:10px">${mpL('Kuo daugiau žaidėjų – tuo sunkiau: bosai turi daugiau gyvybių ir smogia stipriau. Šeimos ir Šikšnosparnio žala bendra.', 'The more players – the harder: bosses have more HP and hit harder. Damage on the Family and the Bat is shared.')}</div>`)
+    + `<div class="mpmsg" style="min-height:18px;margin-top:8px;font-size:14px"></div><button data-close style="${B};background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);font-size:14px;padding:8px">${mpL('Uždaryti (Esc)', 'Close (Esc)')}</button></div>`;
+  const q = s => MP.el.querySelector(s);
+  if (q('[data-host]')) q('[data-host]').onclick = () => mpHost();
+  if (q('[data-join]')) q('[data-join]').onclick = () => mpJoin(q('[data-code]').value);
+  if (q('[data-code]')) q('[data-code]').onkeydown = e => { if (e.key === 'Enter') mpJoin(q('[data-code]').value); };
+  if (q('[data-leave]')) q('[data-leave]').onclick = () => mpLeave(false);
+  q('[data-close]').onclick = mpClose;
+}
+addEventListener('keydown', e => {
+  if (MP.el && !MP.el.hidden) { if (e.code === 'Escape') { e.stopImmediatePropagation(); e.preventDefault(); mpClose(); } return; }
+  if (started && e.code === 'KeyN' && !e.repeat && !card && mode !== 'attract' && !(typeof FK !== 'undefined' && FK.open)) { e.stopImmediatePropagation(); mpOpen(); }
+}, true);
+setTimeout(() => { const go = $('go'); if (go && !$('mpGo')) { const b = document.createElement('button'); b.className = 'btn'; b.id = 'mpGo'; b.type = 'button'; b.textContent = '🌐 Multiplayer'; go.parentNode.appendChild(b); b.onclick = mpOpen; } }, 0);
 </script>
 </html>
