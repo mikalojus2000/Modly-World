@@ -17960,6 +17960,7 @@ function mpPanel() {
     + (MP.on ? `<div style="font-size:13px;opacity:.7">${mpL('Kambario kodas', 'Room code')}</div><div style="font:400 46px 'Lilita One',system-ui;letter-spacing:6px;color:#ffe14d">${MP.code}</div>
       <div style="text-align:left;margin:8px 0"><b>👥 ${mpL('Žaidėjai', 'Players')} ${MP.n}/4</b><ul style="margin:6px 0 0 18px;padding:0">${list}</ul></div>
       <div style="color:#ffb84a;font-size:14px">💪 ${mpL('Sunkumas', 'Difficulty')} ×${mpHpMul().toFixed(2)} – ${mpL('bosai turi daugiau gyvybių, smogia stipriau ir dažniau', 'bosses have more HP, hit harder and more often')}</div>
+      <button data-play style="${B};background:#9aff7a;color:#13301a;font-size:20px">▶ ${mpL('Žaisti', 'Play')}</button>
       <button data-leave style="${B};background:#ff6a5a;color:#fff">🚪 ${mpL('Išeiti iš kambario', 'Leave the room')}</button>`
     : `<input data-nm maxlength="16" value="${(MP.name || mpMyName()).replace(/"/g, '')}" placeholder="${mpL('Tavo vardas', 'Your name')}" style="width:100%;box-sizing:border-box;padding:11px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.3);color:#fff;font:600 16px system-ui">
       <button data-host style="${B};background:#9aff7a;color:#13301a">✨ ${mpL('Sukurti kambarį', 'Create a room')}</button>
@@ -17971,6 +17972,7 @@ function mpPanel() {
   if (q('[data-join]')) q('[data-join]').onclick = () => mpJoin(q('[data-code]').value);
   if (q('[data-code]')) q('[data-code]').onkeydown = e => { if (e.key === 'Enter') mpJoin(q('[data-code]').value); };
   if (q('[data-leave]')) q('[data-leave]').onclick = () => mpLeave(false);
+  if (q('[data-play]')) q('[data-play]').onclick = () => { mpClose(); if (!started) { const go = $('go'); if (go && !go.disabled) go.click(); } };
   q('[data-close]').onclick = mpClose;
 }
 addEventListener('keydown', e => {
