@@ -17986,6 +17986,7 @@ setTimeout(() => { const go = $('go'); if (go && !$('mpGo')) { const b = documen
 // Skin ids: classic cap cat chef cowboy pirate ninja dino knight robot astronaut king unicorn alien gold fish bird spider caveman goldcat ceil pumpkin
 // Pet ids: dog cat cow sheep giraffe penguin frog elephant chicken flamingo duck unicorn aliendog goldcat · Back ids: wings jetpack dragonwings
 const GIFTS = [
+  { id: 'vytisra-1', to: 'vytisra', pets: ['unicorn'], skins: ['unicorn'], tea: true, note: 'Tu beveik perėjai žaidimą – keliauk arbatos pas Mamą Dinozaurę! 🦕', note_en: 'You have almost finished the game – go for tea with Mama Dinosaur! 🦕' },
   // { id: 'g1', to: 'vardas', money: 10000, cars: ['rocket'], skins: ['king'], pets: ['unicorn'], backs: ['wings'], note: 'Ačiū, kad žaidi!' },
 ];
 function giftApply(g) {
@@ -18005,7 +18006,11 @@ fx.push(() => {
   done.push(g.id); try { localStorage.setItem('modly-gifts', JSON.stringify(done)); } catch (_) { }
   let got = []; try { got = giftApply(g); } catch (e) { console.error(e); }
   [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.25, { type: 'triangle', vol: 0.06, when: i * 0.1 }));
-  bigBanner(EN ? '🎁 A GIFT FOR YOU!' : '🎁 DOVANA TAU!', (g.note ? g.note + ' · ' : '') + (got.join(' · ') || (EN ? 'from the creator of Modly World' : 'nuo Modly World kūrėjo')));
+  const note = EN && g.note_en ? g.note_en : g.note;
+  bigBanner(EN ? '🎁 A GIFT FOR YOU!' : '🎁 DOVANA TAU!', (note ? note + ' · ' : '') + (got.join(' · ') || (EN ? 'from the creator of Modly World' : 'nuo Modly World kūrėjo')));
+  // "almost finished the game": every Star Goddess command done (powers 1–4, the Great Bat beaten) → straight to Mama Dinosaur's tea
+  if (g.tea) setTimeout(() => { try { hideCard(); if (typeof batTest === 'function') batTest(2); Q29.stage = 'done'; saveQ29(); TEA.invited = true; localStorage.setItem('modly-teainv', '1');
+    if (GOD.stage === 'void') { GOD.stage = 'none'; GOD.lights = []; saveGod(); } transitioning = true; fadeTo(() => { transitioning = false; cinema = null; enterTea(); }); } catch (e) { console.error(e); } }, 3500);
   return true;
 });
 </script>
