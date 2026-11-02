@@ -17989,6 +17989,7 @@ setTimeout(() => { const go = $('go'); if (go && !$('mpGo')) { const b = documen
 // Pet ids: dog cat cow sheep giraffe penguin frog elephant chicken flamingo duck unicorn aliendog goldcat · Back ids: wings jetpack dragonwings
 const GIFTS = [
   { id: 'vytisra-1', to: 'vytisra', pets: ['unicorn'], skins: ['unicorn'], tea: true, note: 'Tu beveik perėjai žaidimą – keliauk arbatos pas Mamą Dinozaurę! 🦕', note_en: 'You have almost finished the game – go for tea with Mama Dinosaur! 🦕' },
+  { id: 'kkkk-1', to: 'kkkk', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, note: 'VISKAS, KAS ĮMANOMA! Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'EVERYTHING POSSIBLE! All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
   // { id: 'g1', to: 'vardas', money: 10000, cars: ['rocket'], skins: ['king'], pets: ['unicorn'], backs: ['wings'], note: 'Ačiū, kad žaidi!' },
 ];
 function giftApply(g) {
@@ -18013,6 +18014,10 @@ fx.push(() => {
   // "almost finished the game": every Star Goddess command done (powers 1–4, the Great Bat beaten) → straight to Mama Dinosaur's tea
   if (g.tea) setTimeout(() => { try { hideCard(); if (typeof batTest === 'function') batTest(2); Q29.stage = 'done'; saveQ29(); TEA.invited = true; localStorage.setItem('modly-teainv', '1');
     if (GOD.stage === 'void') { GOD.stage = 'none'; GOD.lights = []; saveGod(); } transitioning = true; fadeTo(() => { transitioning = false; cinema = null; enterTea(); }); } catch (e) { console.error(e); } }, 3500);
+  // "everything possible": all Star Goddess powers (1–5), the game finished, a GOD with an own planet, the Family already beaten
+  if (g.max) setTimeout(() => { try { hideCard(); if (typeof batTest === 'function') batTest(2); Q29.stage = 'done'; saveQ29(); TEA.invited = true; localStorage.setItem('modly-teainv', '1');
+    GOD.stage = 'god'; GOD.lights = [0, 1, 2, 3, 4]; saveGod(); if (typeof FAM !== 'undefined') { FAM.stage = 'won'; saveFam(); } if (typeof gateKeyRow === 'function') gateKeyRow(); if (typeof godHalo === 'function') godHalo();
+    transitioning = true; fadeTo(() => { transitioning = false; cinema = null; portalToPlanet(); toast(EN ? '👑 You have everything!' : '👑 Tu turi viską!', EN ? 'F – cars · I – animals · X – costumes · 1–5 – powers · 5 → My planet' : 'F – mašinos · I – gyvūnai · X – kostiumai · 1–5 – galios · 5 → Mano planeta', '#ffe14d'); }); } catch (e) { console.error(e); } }, 3500);
   return true;
 });
 </script>
