@@ -17978,5 +17978,35 @@ addEventListener('keydown', e => {
   if (started && e.code === 'KeyN' && !e.repeat && !card && mode !== 'attract' && !(typeof FK !== 'undefined' && FK.open)) { e.stopImmediatePropagation(); mpOpen(); }
 }, true);
 setTimeout(() => { const go = $('go'); if (go && !$('mpGo')) { const b = document.createElement('button'); b.className = 'btn'; b.id = 'mpGo'; b.type = 'button'; b.textContent = '🌐 Multiplayer'; go.parentNode.appendChild(b); b.onclick = mpOpen; } }, 0);
+
+// ================= GIFTS 🎁 from the game's creator =================
+// Each entry gives something to the account (world name) `to` – once. The account gets it when it logs in and starts.
+// Fields: money (number), cars / skins / pets / backs (arrays of ids, or 'all'), note (text shown with the gift).
+// Car ids: hatch sport monster bus police fire icecream kart limo rocket tractor pumpkincar ghostcar
+// Skin ids: classic cap cat chef cowboy pirate ninja dino knight robot astronaut king unicorn alien gold fish bird spider caveman goldcat ceil pumpkin
+// Pet ids: dog cat cow sheep giraffe penguin frog elephant chicken flamingo duck unicorn aliendog goldcat · Back ids: wings jetpack dragonwings
+const GIFTS = [
+  // { id: 'g1', to: 'vardas', money: 10000, cars: ['rocket'], skins: ['king'], pets: ['unicorn'], backs: ['wings'], note: 'Ačiū, kad žaidi!' },
+];
+function giftApply(g) {
+  const all = (v, list) => v === 'all' ? list.map(x => x.id) : (Array.isArray(v) ? v : []);
+  const got = [];
+  if (g.money) { addMoney(g.money); got.push(`${g.money} €`); }
+  all(g.cars, CARS).forEach(id => { const c = CARS.find(x => x.id === id); if (c && !garage.includes(id)) { garage.push(id); got.push('🚗 ' + c.name); } }); saveGarage();
+  all(g.skins, SKINS).forEach(id => { const s = SKINS.find(x => x.id === id); if (s && !skinOwned.includes(id)) { skinOwned.push(id); got.push('👕 ' + s.name); } }); saveSkins();
+  all(g.pets, ANIMALS).forEach(id => { const a = ANIMALS.find(x => x.id === id); if (a) { petBook.push({ uid: petUid++, t: id, n: pick(a.names), active: false, pt: null }); got.push('🐾 ' + (a.names ? a.names[0] : id)); } }); savePets();
+  all(g.backs, BACKS).forEach(id => { const b = BACKS.find(x => x.id === id); if (b && !Q8.owned.includes(id)) { Q8.owned.push(id); got.push('🪽 ' + b.name); } }); saveQ8();
+  return got;
+}
+fx.push(() => {
+  if (!started || mode === 'attract' || card || cinema || transitioning || typeof AC === 'undefined' || !AC.active) return true;
+  let done = []; try { done = JSON.parse(localStorage.getItem('modly-gifts') || '[]'); } catch (_) { }
+  const g = GIFTS.find(x => x.to && x.to.toLowerCase() === AC.active && !done.includes(x.id)); if (!g) return true;
+  done.push(g.id); try { localStorage.setItem('modly-gifts', JSON.stringify(done)); } catch (_) { }
+  let got = []; try { got = giftApply(g); } catch (e) { console.error(e); }
+  [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.25, { type: 'triangle', vol: 0.06, when: i * 0.1 }));
+  bigBanner(EN ? '🎁 A GIFT FOR YOU!' : '🎁 DOVANA TAU!', (g.note ? g.note + ' · ' : '') + (got.join(' · ') || (EN ? 'from the creator of Modly World' : 'nuo Modly World kūrėjo')));
+  return true;
+});
 </script>
 </html>
