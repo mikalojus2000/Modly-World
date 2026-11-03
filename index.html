@@ -302,6 +302,7 @@ const EN = (() => { try { return localStorage.getItem('modly-lang') !== 'lt'; } 
 // (this listener is the very first one, so it runs before every power key listener)
 addEventListener('keydown', e => {
   if (typeof mode === 'undefined' || mode !== 'mine' || !started || card) return;
+  if (e.code === 'KeyF' && !e.repeat && typeof mnFloor === 'function') { e.stopImmediatePropagation(); e.preventDefault(); mnFloor(MN.sel); return; }
   const m = /^Digit([0-9])$/.exec(e.code); if (!m) return;
   e.stopImmediatePropagation(); e.preventDefault();
   try { const pg = Math.floor(MN.sel / 10), i = pg * 10 + (+m[1] + 9) % 10; if (i < MN_TYPES.length) MN.sel = i; } catch (_) { }
@@ -16024,7 +16025,7 @@ function updateMine(dt, t) {
   if (!MN.hud) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:4px;z-index:6;pointer-events:none;flex-wrap:wrap;justify-content:center;max-width:96vw'; document.body.appendChild(d); MN.hud = d;
     const ch = document.createElement('div'); ch.style.cssText = 'position:fixed;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border:2px solid #fff;border-radius:50%;z-index:6;pointer-events:none;box-shadow:0 0 4px #000'; document.body.appendChild(ch); MN.cross = ch; }
   MN.hud.hidden = false; MN.cross.hidden = false;
-  if (MN.hudSel !== MN.sel) { MN.hudSel = MN.sel; const pg = Math.floor(MN.sel / 10); MN.hud.innerHTML = `<div style="width:100%;text-align:center;font:800 12px system-ui;color:#fff;text-shadow:0 1px 3px #000">${gL(`${pg + 1} puslapis · Q – kitas puslapis · skaičiai – pasirinkti`, `Page ${pg + 1} · Q – next page · numbers – choose`)}</div>` + MN_TYPES.map((T, i) => { const cur = Math.floor(i / 10) === pg; return `<div style="background:${i === MN.sel ? 'rgba(255,225,77,.95)' : 'rgba(20,20,30,.75)'};color:${i === MN.sel ? '#1a1a1a' : '#fff'};opacity:${cur ? 1 : 0.45};border-radius:8px;padding:3px 6px;font:700 12px system-ui;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${T.erase ? '#ff3a3a' : T.c != null ? '#' + T.c.toString(16).padStart(6, '0') : T.obj === 'tree' ? '#3ac84a' : T.obj === 'flower' ? '#ff4a6a' : '#5ac85a'}">${T.erase ? '✖' : ''}</span>${cur ? `<small>${(i % 10 + 1) % 10}</small>` : ''} ${gL(T.lt, T.en)}</div>`; }).join(''); }
+  if (MN.hudSel !== MN.sel) { MN.hudSel = MN.sel; const pg = Math.floor(MN.sel / 10); MN.hud.innerHTML = `<div style="width:100%;text-align:center;font:800 12px system-ui;color:#fff;text-shadow:0 1px 3px #000">${gL(`${pg + 1} puslapis · Q – kitas puslapis · skaičiai – pasirinkti · F – grindys`, `Page ${pg + 1} · Q – next page · numbers – choose · F – floor`)}</div>` + MN_TYPES.map((T, i) => { const cur = Math.floor(i / 10) === pg; return `<div style="background:${i === MN.sel ? 'rgba(255,225,77,.95)' : 'rgba(20,20,30,.75)'};color:${i === MN.sel ? '#1a1a1a' : '#fff'};opacity:${cur ? 1 : 0.45};border-radius:8px;padding:3px 6px;font:700 12px system-ui;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${T.erase ? '#ff3a3a' : T.c != null ? '#' + T.c.toString(16).padStart(6, '0') : T.obj === 'tree' ? '#3ac84a' : T.obj === 'flower' ? '#ff4a6a' : '#5ac85a'}">${T.erase ? '✖' : ''}</span>${cur ? `<small>${(i % 10 + 1) % 10}</small>` : ''} ${gL(T.lt, T.en)}</div>`; }).join(''); }
   if (!card) setPrompt(MN.home && player.pos.distanceTo(MN.home.position) < 3 ? gL('<kbd>E</kbd> grįžti namo', '<kbd>E</kbd> go home') : '');
 }
 fx.push(() => { if (mode !== 'mine') { if (MN.hud) MN.hud.hidden = true; if (MN.cross) MN.cross.hidden = true; } return true; });
@@ -18226,5 +18227,16 @@ const hsNear = () => { let best = null, bd = 2.6; for (const [k, g] of MN.cells)
 { const _u = fkUpdate; fkUpdate = (dt, t) => {
     for (const p of FK.people) if (p.home) { const d = Math.hypot(p.x - p.home.x, p.z - p.home.z); if (d > 7) { p.hd = Math.atan2(p.home.x - p.x, p.home.z - p.z); p.walk = true; if (p.t > 1) p.t = 1; } }
     return _u(dt, t); }; }
+
+// ================= My planet: change the FLOOR to any block (F) =================
+function mnFloorApply(t) { if (!MN.ground) return; const T = MN_TYPES[t]; MN.ground.material = (T && !T.obj && !T.erase) ? mnMat(t) : (MN.groundMat0 || MN.ground.material); }
+function mnFloor(t) {
+  const T = MN_TYPES[t]; if (!MN.ground) return;
+  if (!MN.groundMat0) MN.groundMat0 = MN.ground.material;
+  if (!T || T.obj || T.erase) { toast(gL('Grindims tinka tik kaladėlės', 'Only blocks work as a floor'), gL('Pasirink kaladėlę (žolė, akmuo, auksas…) ir spausk F', 'Choose a block (grass, stone, gold…) and press F'), '#ffe14d'); return; }
+  mnFloorApply(t); try { localStorage.setItem('modly-myfloor', String(t)); } catch (_) { }
+  tone(520, 0.12, { to: 780, type: 'triangle', vol: 0.05 }); toast(gL('🟫 Naujos grindys: ', '🟫 New floor: ') + gL(T.lt, T.en), gL('Pasirink kitą kaladėlę ir vėl spausk F', 'Choose another block and press F again'), '#ffe14d');
+}
+{ const _b = buildMine; buildMine = (...a) => { const first = !MN.built; const r = _b(...a); if (first && MN.ground) { MN.groundMat0 = MN.ground.material; let t = null; try { t = localStorage.getItem('modly-myfloor'); } catch (_) { } if (t !== null && MN_TYPES[+t]) mnFloorApply(+t); } return r; }; }
 </script>
 </html>
