@@ -18270,7 +18270,9 @@ function hrAdd(g, D, kid) {
 // the controls (Body tab): for everybody, or for the one person you are changing (✏️)
 const hrGet = key => FK.edit ? pvEff(FK.edit.k, FK.edit.i)[key] : FOLK[key];
 function hrSetV(key, v) { if (FK.edit) pvSet(FK.edit.k, FK.edit.i, key, v); else { FOLK[key] = v; fkSave(); FK.dirty = true; } fkPreview(); }
-{ const _t = fkTab; fkTab = tab => { _t(tab); if (tab !== 'body' || !FK.el) return; const tc = FK.el.querySelector('.tc'); if (!tc) return;
+{ const _t = fkTab; fkTab = tab => { _t(tab); if (!FK.el) return; const tc = FK.el.querySelector('.tc'); if (!tc) return;
+    if (tab === 'names') { hrNamesRows(tc); return; }
+    if (tab !== 'body' || !FK.edit) return;   // gender and hair are chosen for EACH person (not for everybody)
     const kid = FK.edit ? FK.edit.k === 'k' : false, st = hrGet('hair') || 'none', hc = hrGet('hairColor') || '#5a3a1a', sx = hrGet('sex') || 'm';
     const d = document.createElement('div'); d.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-top:6px';
     d.innerHTML = `<div><b>🚻 ${hrL('Lytis', 'Gender')}</b></div><div class="row" style="flex-wrap:wrap;gap:6px">
@@ -18284,6 +18286,23 @@ function hrSetV(key, v) { if (FK.edit) pvSet(FK.edit.k, FK.edit.i, key, v); else
     d.querySelectorAll('[data-hc]').forEach(s => s.onclick = () => { hrSetV('hairColor', s.dataset.hc); fkTab('body'); });
     d.querySelector('[data-hcin]').oninput = e => hrSetV('hairColor', e.target.value);
   }; }
+
+// in the "Names" list: under every person – boy / girl, hairstyle and hair colour
+function hrNamesRows(tc) {
+  tc.querySelectorAll('input[data-p="l"]').forEach(inp => {
+    const k = inp.dataset.k === 'anames' ? 'a' : 'k', i = +inp.dataset.i, D = pvEff(k, i), kid = k === 'k', row = inp.parentElement;
+    const d = document.createElement('div'); d.style.cssText = 'display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 8px 58px';
+    const sexBtn = (v, ic, lt, en) => `<button type="button" data-hsx="${v}" class="btn${(D.sex || 'm') === v ? ' on' : ''}" style="padding:4px 8px;font-size:12px">${ic} ${hrL(lt, en)}</button>`;
+    d.innerHTML = sexBtn('m', '👦', kid ? 'Berniukas' : 'Vyras', kid ? 'Boy' : 'Man') + sexBtn('f', '👧', kid ? 'Mergaitė' : 'Moteris', kid ? 'Girl' : 'Woman')
+      + `<select data-hst style="padding:4px;border-radius:8px;background:#1c1430;color:#fff;border:1px solid rgba(255,255,255,.3);font:600 12px system-ui">${HR_STYLES.map(([id, ic, lt, en]) => `<option value="${id}"${(D.hair || 'none') === id ? ' selected' : ''}>${ic} ${hrL(lt, en)}</option>`).join('')}</select>`
+      + `<input type="color" data-hcl value="${D.hairColor || '#5a3a1a'}" title="${hrL('Plaukų spalva', 'Hair colour')}" style="width:30px;height:24px;border:none;background:none;cursor:pointer">`;
+    row.after(d);
+    const set = (key, v) => { pvSet(k, i, key, v); FK.edit = { k, i }; fkPreview(); FK.edit = null; };
+    d.querySelectorAll('[data-hsx]').forEach(b => b.onclick = () => { set('sex', b.dataset.hsx); d.querySelectorAll('[data-hsx]').forEach(x => x.classList.toggle('on', x === b)); });
+    d.querySelector('[data-hst]').onchange = e => set('hair', e.target.value);
+    d.querySelector('[data-hcl]').oninput = e => set('hairColor', e.target.value);
+  });
+}
 
 // ================= GoatCounter statistics (only in the public GitHub game) =================
 // https://mikalojus2000.goatcounter.com – page views + events: login, new account, game start, multiplayer room / join
