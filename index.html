@@ -298,6 +298,14 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const EN = (() => { try { return localStorage.getItem('modly-lang') !== 'lt'; } catch (_) { return true; } })();
+// On "My planet" the powers (1 fireball, 2 teleport, 3 lightning, 4 sword, 5 portal) do not work: the number keys only choose blocks.
+// (this listener is the very first one, so it runs before every power key listener)
+addEventListener('keydown', e => {
+  if (typeof mode === 'undefined' || mode !== 'mine' || !started || card) return;
+  const m = /^Digit([0-9])$/.exec(e.code); if (!m) return;
+  e.stopImmediatePropagation(); e.preventDefault();
+  try { const pg = Math.floor(MN.sel / 10), i = pg * 10 + (+m[1] + 9) % 10; if (i < MN_TYPES.length) MN.sel = i; } catch (_) { }
+}, true);
 const NAME_EN = {"Kukulis":"Dumpling","Murkis":"Purrkins","Pienė":"Dandelion","Galvutė":"Noggin","Mūčia":"Moomoo","Debesėlis":"Cloudy","Vatelė":"Fluffy","Kamuoliukas":"Bally","Kaklas":"Necky","Bokštas":"Tower","Ilgšė":"Longy","Frakas":"Tux","Ledukas":"Icy","Tipenis":"Waddles","Akutis":"Peepers","Kvakis":"Croaky","Šokinėlis":"Hopper","Ausylas":"Big Ears","Mažylis":"Tiny","Trimitas":"Trumpet","Kudakė":"Clucky","Sparnelis":"Wingy","Vienkojis":"One-Leg","Rožytė":"Rosie","Lankstukas":"Bendy","Kvaksys":"Quacky","Pliuškis":"Splashy","Ančiukas":"Ducky","Vaivorykštukas":"Rainbowy","Antenėlis":"Antenny","Laimiukas":"Lucky","Burbuliukai":"Bubblers","Pelekai":"Finners","Žvynai":"Scalies","Kriauklinai":"Shellies","Bangučiai":"Wavelets","Dugniai":"Bottomers","Srovėnai":"Streamers","Perliukai":"Pearlies","Jūrželiai":"Seasprouts","Smėliukai":"Sandies","Koraliai":"Corallies","Putiukai":"Foamies","Gelmiai":"Deepies","Rifiukai":"Reefies","Ikriukai":"Roelets","Dumbliai":"Weedies","Uodegiai":"Tailies","Žiaunaičiai":"Gillies","Lašiukai":"Droplets","Banguoliai":"Wavers","Blubis":"Blubby","Pūkis":"Fluffball","Žvynutė":"Scaly","Taškiukas":"Dotty","Jonas":"John","Ona":"Anna","Petras":"Peter","Rūta":"Ruth","Tomas":"Tom","Mantas":"Max","Eglė":"Ellie","Lukas":"Luke","Austėja":"Ava","Domas":"Dom","Ieva":"Eve","Matas":"Matt","Kamilė":"Camille","Paulius":"Paul","Gabija":"Gabby","Rokas":"Rocky","Urtė":"Ruby","Karolis":"Charlie","Emilija":"Emily","Vėjelis":"Breezy","Ausytė":"Floppy","Margis":"Patch","Bimbas":"Bingo","Riestuodegis":"Curlytail","Snukutis":"Snouty","Dulkė":"Dusty","Fiu-Fiu":"Zoom-Zoom","Šuniukas Jonas":"Puppy John","Pyragėlis":"Cupcake","Kaulius":"Bones","Šokliukas":"Jumpy","Lapė":"Foxy","Onutė":"Annie","Gintarė":"Amber","Vytas":"Victor","Algis":"Al","Tomukas":"Tommy","Gugas":"Goog","Ugabugas":"Oogabooga","Ugabuga":"Oogabooga","Bumbas":"Boomer","Cukrinukas":"Sugarplum","Blizgutis":"Sparkles"}, NAME_LT = Object.fromEntries(Object.entries(NAME_EN).map(([a, b]) => [b, a])), petNameL = n => EN ? (NAME_EN[n] || n) : (NAME_LT[n] || n);
 // one time: every old save (it got free test-world things: all cars, pets, skins, aliens + Cloud Prince done…) starts over as a clean new game
 try { if (localStorage.getItem('modly-reset141') !== '1') {
@@ -18080,5 +18088,15 @@ fx.push(() => { if (mode === 'mine') FK.people.forEach(p => { if (p.label) p.lab
       <div style="font-size:13px;color:#9aff7a" data-fams>${famTxt()}</div>`;
     tc.querySelectorAll('input[data-k]').forEach(el => { el.addEventListener('keydown', e => e.stopPropagation()); el.oninput = () => { const k = el.dataset.k, i = +el.dataset.i; FOLK[k][i] = Object.assign({}, FOLK[k][i] || {}, { [el.dataset.p]: el.value.trim() }); fkSave(); FK.dirty = true; const fd = tc.querySelector('[data-fams]'); if (fd) fd.textContent = famTxt(); }; });
   }; }
+
+// ================= no powers on My planet (safety for mouse / other ways) =================
+{ const noPow = () => mode === 'mine';
+  { const _f = throwFireball; throwFireball = (...a) => noPow() ? undefined : _f(...a); }
+  { const _b = doBolt; doBolt = (...a) => noPow() ? undefined : _b(...a); }
+  { const _g = goldSlash; goldSlash = (...a) => noPow() ? undefined : _g(...a); }
+  { const _w = spawnWorldPortal; spawnWorldPortal = (...a) => noPow() ? undefined : _w(...a); }
+  { const _t = doTeleport; doTeleport = (...a) => noPow() ? undefined : _t(...a); }
+  fx.push(() => { if (noPow() && typeof Q28 !== 'undefined' && Q28.out) { Q28.out = false; saveQ28(); refreshGoldHeld(); } return true; });
+}
 </script>
 </html>
