@@ -17841,7 +17841,9 @@ if (EN) { const HTML_EN = {"garsas ·": "sound ·", "grafika": "graphics", "Biom
 // and attack more often. Damage on the Family Arena bosses and the Great Bat is shared between the players.
 const mpL = (lt, en) => EN ? en : lt;
 const MP = { on: false, host: false, peer: null, conns: [], conn: null, code: '', name: '', peers: new Map(), myId: '', n: 1, el: null, hud: null, sendT: 0, remote: false, lib: null };
-const MP_COLS = ['#7ad86a', '#4ab0ff', '#ff8ab8', '#ffd23a'];
+const MP_COLS = ['#4ad84a', '#ff3a3a', '#ffd23a', '#3a7aff'];   // green, red, yellow, blue – one colour for each player
+const MP_CNAME = [['žalias', 'green', '🟢'], ['raudonas', 'red', '🔴'], ['geltonas', 'yellow', '🟡'], ['mėlynas', 'blue', '🔵']];
+MP.slot = 0; MP.slotOf = {};
 const mpHpMul = () => 1 + 0.75 * (MP.n - 1), mpDmgMul = () => 1 + 0.25 * (MP.n - 1), mpRateMul = () => 1 + 0.2 * (MP.n - 1);
 function mpCfg() { const c = { debug: 0 }; try { const s = JSON.parse(localStorage.getItem('modly-mpserver') || 'null'); if (s) Object.assign(c, s); } catch (_) { } return c; }
 function mpLoadLib() {
@@ -17859,9 +17861,9 @@ async function mpHost() {
   const p = MP.peer = new Peer(mpPid(code), mpCfg());
   p.on('open', id => { MP.on = true; MP.host = true; MP.code = code; MP.myId = id; MP.n = 1; mpPanel(); toast(mpL('🌐 Kambarys sukurtas!', '🌐 Room created!'), mpL(`Kodas: ${code} – pasakyk jį draugams (iki 3)`, `Code: ${code} – tell it to your friends (up to 3)`), '#4ab0ff'); });
   p.on('connection', c => {
-    c.on('open', () => { if (MP.conns.length >= 3) { c.send({ t: 'full' }); setTimeout(() => c.close(), 300); return; } MP.conns.push(c); c.send({ t: 'hi', code: MP.code }); });
+    c.on('open', () => { if (MP.conns.length >= 3) { c.send({ t: 'full' }); setTimeout(() => c.close(), 300); return; } MP.conns.push(c); const used = new Set(Object.values(MP.slotOf)); MP.slotOf[c.peer] = [1, 2, 3].find(x => !used.has(x)) || 1; c.send({ t: 'hi', code: MP.code }); });
     c.on('data', d => mpOnData(d, c));
-    c.on('close', () => { MP.conns = MP.conns.filter(x => x !== c); const r = MP.peers.get(c.peer); if (r) { mpDrop(c.peer); toast('🌐 ' + mpL(`${r.name} išėjo`, `${r.name} left`), '', '#4ab0ff'); } mpPanel(); });
+    c.on('close', () => { MP.conns = MP.conns.filter(x => x !== c); delete MP.slotOf[c.peer]; const r = MP.peers.get(c.peer); if (r) { mpDrop(c.peer); toast('🌐 ' + mpL(`${r.name} išėjo`, `${r.name} left`), '', '#4ab0ff'); } mpPanel(); });
   });
   p.on('error', e => { if (String(e.type) === 'unavailable-id') { mpLeave(true); mpHost(); return; } mpMsg(mpL('Klaida: ', 'Error: ') + (e.type || e.message)); });
 }
@@ -17882,24 +17884,25 @@ function mpLeave(quiet) {
   [...MP.peers.keys()].forEach(mpDrop); if (!quiet) { toast(mpL('🌐 Išėjai iš kambario', '🌐 You left the room'), '', '#4ab0ff'); mpPanel(); }
 }
 function mpDrop(id) { const r = MP.peers.get(id); if (r && r.g && r.g.parent) r.g.parent.remove(r.g); MP.peers.delete(id); }
-function mpState() { return { id: MP.myId, name: MP.name, m: mode, p: [player.pos.x, player.pos.y, player.pos.z], f: [player.fwd.x, player.fwd.y, player.fwd.z] }; }
+function mpState() { return { id: MP.myId, c: MP.host ? 0 : MP.slot, name: MP.name, m: mode, p: [player.pos.x, player.pos.y, player.pos.z], f: [player.fwd.x, player.fwd.y, player.fwd.z] }; }
 function mpSend(d) { try { if (MP.host) MP.conns.forEach(c => c.open && c.send(d)); else if (MP.conn && MP.conn.open) MP.conn.send(d); } catch (_) { } }
 function mpOnData(d, c) {
   if (!d || typeof d !== 'object') return;
   if (d.t === 'full') { mpMsg(mpL('Kambarys pilnas (4 žaidėjai)', 'The room is full (4 players)')); toast(mpL('🌐 Kambarys pilnas', '🌐 The room is full'), mpL('Jame jau 4 žaidėjai', 'There are already 4 players'), '#ff5a5a'); mpLeave(true); mpPanel(); return; }
-  if (d.t === 'st' && MP.host) { d.id = c.peer; mpPut(d); return; }
-  if (d.t === 'all' && !MP.host) { const seen = new Set(); d.l.forEach(s => { if (s.id === MP.myId) return; seen.add(s.id); mpPut(s); }); [...MP.peers.keys()].forEach(k => { if (!seen.has(k)) mpDrop(k); }); MP.n = d.l.length; return; }
+  if (d.t === 'st' && MP.host) { d.id = c.peer; d.c = MP.slotOf[c.peer] || 1; mpPut(d); return; }
+  if (d.t === 'all' && !MP.host) { const seen = new Set(); d.l.forEach(s => { if (s.id === MP.myId) { MP.slot = s.c | 0; return; } seen.add(s.id); mpPut(s); }); [...MP.peers.keys()].forEach(k => { if (!seen.has(k)) mpDrop(k); }); MP.n = d.l.length; return; }
   if (d.t === 'ev') { if (MP.host) MP.conns.forEach(x => { if (x !== c && x.open) x.send(d); }); mpEvent(d); }
 }
 function mpPut(s) {
   let r = MP.peers.get(s.id); const isNew = !r;
   if (!r) { r = { id: s.id, g: null, pos: new V3(s.p[0], s.p[1], s.p[2]), last: new V3(), ph: 0 }; MP.peers.set(s.id, r); }
+  r.slot = s.c | 0; if (r.g && r.gSlot !== r.slot) { if (r.g.parent) r.g.parent.remove(r.g); r.g = null; }
   r.name = String(s.name || '?').slice(0, 16); r.m = s.m; r.tp = new V3(s.p[0], s.p[1], s.p[2]); r.tf = new V3(s.f[0], s.f[1], s.f[2]); if (r.m !== r.lastM) { r.pos.copy(r.tp); r.lastM = r.m; }
   if (isNew) { toast('🌐 ' + mpL(`${r.name} prisijungė!`, `${r.name} joined!`), mpL('Dabar sunkiau! 💪', 'Now it is harder! 💪'), '#4ab0ff'); if (MP.el && !MP.el.hidden) mpPanel(); }
 }
 function mpNameTex(t, col) { const c = document.createElement('canvas'); c.width = 256; c.height = 64; const x = c.getContext('2d'); x.font = "bold 34px 'Lilita One', sans-serif"; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineWidth = 6; x.strokeStyle = '#000'; x.strokeText(t, 128, 34); x.fillStyle = col; x.fillText(t, 128, 34); return new THREE.CanvasTexture(c); }
 function mpModel(r) {
-  const col = MP_COLS[Math.abs([...r.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7)) % 4];
+  const col = MP_COLS[r.slot || 0]; r.gSlot = r.slot;
   const g = makeFolkFig({ head: 1, eyes: 1, nose: 0.6, mouth: 1, arms: 1, legs: 1, chest: 0.85, color: col }, null, false); g.scale.setScalar(0.85);
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: mpNameTex(r.name, col), transparent: true, depthWrite: false })); s.scale.set(2.4, 0.6, 1); s.position.y = g.userData.h + 0.6; g.add(s); r.label = s; r.col = col;
   return g;
@@ -17925,7 +17928,7 @@ function mpPlace(sc) {
 fx.push(dt => {
   if (!MP.on) { if (MP.hud) MP.hud.hidden = true; return true; }
   MP.sendT -= dt; if (MP.sendT <= 0) { MP.sendT = 0.1; MP.name = MP.name || mpMyName();
-    if (MP.host) { const l = [mpState(), ...[...MP.peers.values()].filter(r => r.tp).map(r => ({ id: r.id, name: r.name, m: r.m, p: [r.tp.x, r.tp.y, r.tp.z], f: [r.tf.x, r.tf.y, r.tf.z] }))]; MP.n = l.length; mpSend({ t: 'all', l }); }
+    if (MP.host) { const l = [mpState(), ...[...MP.peers.values()].filter(r => r.tp).map(r => ({ id: r.id, c: MP.slotOf[r.id] || 1, name: r.name, m: r.m, p: [r.tp.x, r.tp.y, r.tp.z], f: [r.tf.x, r.tf.y, r.tf.z] }))]; MP.n = l.length; mpSend({ t: 'all', l }); }
     else mpSend(Object.assign({ t: 'st' }, mpState())); }
   mpHud(); return true;
 });
@@ -18303,6 +18306,68 @@ function hrNamesRows(tc) {
     d.querySelector('[data-hcl]').oninput = e => set('hairColor', e.target.value);
   });
 }
+
+// ================= MULTIPLAYER 2: hit other players, colours, and everyone sees what you pick up =================
+const MP2 = { hp: 10, cd: 0, ring: null, ringSlot: -1, hpEl: null };
+const mpCol = i => MP_COLS[i || 0], mpCName = i => { const c = MP_CNAME[i || 0]; return `${c[2]} ${mpL(c[0], c[1])}`; };
+// a coloured ring under YOUR feet, so you know which colour you are
+fx.push(() => {
+  const want = MP.on && started && mode !== 'attract' && player.mesh;
+  if (!want) { if (MP2.ring && MP2.ring.parent) MP2.ring.parent.remove(MP2.ring); if (MP2.hpEl) MP2.hpEl.hidden = true; return true; }
+  if (!MP2.ring || MP2.ringSlot !== MP.slot) { if (MP2.ring && MP2.ring.parent) MP2.ring.parent.remove(MP2.ring);
+    MP2.ring = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.07, 6, 28), new THREE.MeshBasicMaterial({ color: mpCol(MP.slot), toneMapped: false })); MP2.ring.rotation.x = Math.PI / 2; MP2.ring.position.y = 0.06; MP2.ringSlot = MP.slot; }
+  if (MP2.ring.parent !== player.mesh) player.mesh.add(MP2.ring);
+  if (!MP2.hpEl) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:6;background:rgba(20,20,30,.75);border-radius:12px;padding:5px 12px;font:800 15px system-ui;color:#fff;pointer-events:none'; document.body.appendChild(d); MP2.hpEl = d; }
+  MP2.hpEl.hidden = false; const k = MP.slot + ':' + MP2.hp + EN; if (MP2.hpEl.dataset.k !== k) { MP2.hpEl.dataset.k = k; MP2.hpEl.innerHTML = `<span style="color:${mpCol(MP.slot)}">● ${mpL('Tu', 'You')}: ${mpCName(MP.slot)}</span> · ${'❤️'.repeat(Math.max(0, Math.ceil(MP2.hp / 2)))}${MP2.hp % 2 ? '' : ''} <small style="opacity:.7">${MP2.hp}/10</small>`; }
+  return true;
+});
+// a remote player's coloured ring under their feet too
+{ const _m = mpModel; mpModel = r => { const g = _m(r); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.55 / 0.85, 0.07 / 0.85, 6, 28), new THREE.MeshBasicMaterial({ color: mpCol(r.slot), toneMapped: false })); ring.rotation.x = Math.PI / 2; ring.position.y = 0.06; g.add(ring); return g; }; }
+// ---------- hitting other players (mouse, from close) ----------
+function mpReach() { const up = mode === 'planet' ? player.pos.clone().normalize() : new V3(0, 1, 0); return player.pos.clone().addScaledVector(up, 1.1).addScaledVector(player.fwd, 0.9); }
+{ const _h = handDown; handDown = (...a) => { const r = _h(...a);
+    try { if (MP.on && started && !card && mode !== 'attract' && performance.now() > MP2.cd) { const rp = mpReach();
+      for (const p of MP.peers.values()) { if (p.m !== mode || !p.pos) continue; const up = mode === 'planet' ? p.pos.clone().normalize() : new V3(0, 1, 0); if (p.pos.clone().addScaledVector(up, 1).distanceTo(rp) < 1.6) {
+        MP2.cd = performance.now() + 450; mpSend({ t: 'ev', k: 'hit', to: p.id, d: player.fwd.toArray(), from: MP.name, c: MP.slot });
+        if (p.g) { p.g.userData.flash = 0.25; } tone(220, 0.12, { to: 110, type: 'square', vol: 0.06, lp: 1200 }); noiseHit(0.15, { ft: 'lowpass', f: 900, vol: 0.12 }); break; } } } } catch (e) { console.error(e); }
+    return r; }; }
+function mpGotHit(d) {
+  if (cinema || transitioning) return; MP2.hp -= 1; const dir = new V3().fromArray(d.d || [0, 0, 1]);
+  if (mode === 'planet') { const up = player.pos.clone().normalize(); dir.projectOnPlane(up).normalize(); }
+  player.vel.addScaledVector(dir, 11); player.vr = Math.max(player.vr || 0, 6); player.grounded = false;
+  redFlash('rgba(255,40,40,.35)', 200); shake = Math.max(shake || 0, 0.3); tone(160, 0.15, { to: 90, type: 'square', vol: 0.05, lp: 900 });
+  if (MP2.hp <= 0) { MP2.hp = 10; mpSend({ t: 'ev', k: 'ko', by: d.from, who: MP.name, c: d.c });
+    toast(mpL(`💥 ${d.from} tave nugalėjo!`, `💥 ${d.from} beat you!`), mpL('Atsiradai iš naujo su 10 širdelių', 'You are back with 10 hearts'), mpCol(d.c));
+    transitioning = true; fadeTo(() => { transitioning = false; if (mode === 'planet') portalToPlanet(); else { player.vel.set(0, 0, 0); } }); }
+}
+// ---------- picking things up: the others see it ----------
+function mpHeldShow(r, b, name) {
+  mpHeldHide(r); if (!r.g) return; let o;
+  if (b && b.mesh) { o = b.mesh.clone(true); o.visible = true; o.position.set(0, 0, 0); o.quaternion.identity(); const bb = new THREE.Box3().setFromObject(o), sz = bb.getSize(new V3()), m = Math.max(sz.x, sz.y, sz.z) || 1; o.scale.multiplyScalar(Math.min(1.6, 0.8 / m)); }
+  else { o = new THREE.Group(); o.add(new THREE.Mesh(G.box, new THREE.MeshStandardMaterial({ color: 0xffd23a, emissive: 0x6a4a00 }))); o.children[0].scale.setScalar(0.45); }
+  const lab = typeof fnLabel === 'function' ? fnLabel('✋ ' + name) : null; const holder = new THREE.Group(); holder.position.set(0.45, 1.15, 0.45); holder.add(o); if (lab) { lab.position.y = 0.6; lab.scale.multiplyScalar(0.6); holder.add(lab); }
+  r.g.add(holder); r.heldG = holder; r.heldName = name;
+}
+function mpHeldHide(r) { if (r.heldG && r.heldG.parent) r.heldG.parent.remove(r.heldG); r.heldG = null; r.heldName = null; }
+{ const _g = tryGrab; tryGrab = side => { const ok = _g(side); if (ok && MP.on) { const b = hands[side].item; if (b) mpSend({ t: 'ev', k: 'grab', id: MP.myId, n: b.name, p: b.pos.toArray(), from: MP.name }); } return ok; }; }
+{ const _u = handUp; handUp = (side, gentle) => { const b = hands[side] && hands[side].item; const r = _u(side, gentle); if (b && MP.on) mpSend({ t: 'ev', k: 'drop', id: MP.myId, n: b.name, p: b.pos.toArray(), v: b.vel.toArray(), vr: b.vr }); return r; }; }
+// ---------- receiving ----------
+{ const _e = mpEvent; mpEvent = d => {
+    try {
+      if (d.k === 'hit') { if (d.to === MP.myId) mpGotHit(d); return; }
+      if (d.k === 'ko') { toast(mpL(`💥 ${d.by} nugalėjo ${d.who}!`, `💥 ${d.by} beat ${d.who}!`), '', mpCol(d.c)); return; }
+      if (d.k === 'grab' || d.k === 'drop') { const r = MP.peers.get(d.id); if (!r) return; const p = new V3().fromArray(d.p);
+        if (d.k === 'grab') { let best = null, bd = 4; if (mode === 'planet' && r.m === 'planet') for (const b of bodies) { if (b.held || b.name !== d.n) continue; const dd = b.pos.distanceTo(p); if (dd < bd) { bd = dd; best = b; } }
+          if (best) { best.held = 'remote'; best.mesh.visible = false; r.heldBody = best; } else r.heldBody = null; mpHeldShow(r, best, d.n);
+          if (r.m === mode) toast(mpL(`✋ ${d.from} paėmė: ${d.n}`, `✋ ${d.from} picked up: ${d.n}`), '', mpCol(r.slot)); }
+        else { mpHeldHide(r); const b = r.heldBody; r.heldBody = null; if (b) { b.pos.copy(p); b.up.copy(p.clone().normalize()); b.vel.fromArray(d.v || [0, 0, 0]); b.vr = d.vr || 0; b.held = null; b.grounded = false; b.mesh.visible = true; } }
+        return; }
+    } catch (e) { console.error(e); }
+    return _e(d); }; }
+// when a player leaves – give back what they were holding
+{ const _d = mpDrop; mpDrop = id => { const r = MP.peers.get(id); if (r && r.heldBody) { r.heldBody.held = null; r.heldBody.mesh.visible = true; } return _d(id); }; }
+// flash the remote player you hit
+fx.push(dt => { if (!MP.on) return true; for (const r of MP.peers.values()) if (r.g && r.g.userData.flash > 0) { r.g.userData.flash -= dt; const s = 0.85 * (1 + Math.max(0, r.g.userData.flash) * 0.8); r.g.scale.setScalar(s); if (r.g.userData.flash <= 0) r.g.scale.setScalar(0.85); } return true; });
 
 // ================= GoatCounter statistics (only in the public GitHub game) =================
 // https://mikalojus2000.goatcounter.com – page views + events: login, new account, game start, multiplayer room / join
