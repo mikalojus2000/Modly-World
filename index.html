@@ -18098,5 +18098,61 @@ fx.push(() => { if (mode === 'mine') FK.people.forEach(p => { if (p.label) p.lab
   { const _t = doTeleport; doTeleport = (...a) => noPow() ? undefined : _t(...a); }
   fx.push(() => { if (noPow() && typeof Q28 !== 'undefined' && Q28.out) { Q28.out = false; saveQ28(); refreshGoldHeld(); } return true; });
 }
+
+// ================= every person can be DIFFERENT ✏️ (own body, colour, clothes and size) =================
+if (!Array.isArray(FOLK.aover)) FOLK.aover = [];
+if (!Array.isArray(FOLK.kover)) FOLK.kover = [];
+const pvL = (lt, en) => EN ? en : lt;
+const PV_KEYS = ['head', 'eyes', 'nose', 'mouth', 'arms', 'legs', 'chest'];
+const pvArr = k => k === 'a' ? FOLK.aover : FOLK.kover;
+const pvOver = (k, i) => pvArr(k)[i] || null;
+const pvHas = (k, i) => { const o = pvOver(k, i); return !!o && Object.keys(o).length > 0; };
+const pvEff = (k, i) => Object.assign({}, FOLK, pvOver(k, i) || {});
+function pvSet(k, i, key, v) { const a = pvArr(k); a[i] = Object.assign({}, a[i] || {}, { [key]: v }); fkSave(); FK.dirty = true; }
+function pvName(k, i) { const n = (k === 'a' ? FOLK.anames : FOLK.knames)[i]; const t = n ? [n.f, n.l].filter(Boolean).join(' ') : ''; return t || (k === 'a' ? pvL(`Suaugęs ${i + 1}`, `Grown-up ${i + 1}`) : pvL(`Vaikas ${i + 1}`, `Child ${i + 1}`)); }
+function pvOutfit(k, i, all) { const o = pvOver(k, i), outs = FOLK.outfits; if (o && o.outfit !== undefined) return o.outfit < 0 ? null : outs[o.outfit] || null; return outs.length ? outs[all % outs.length] : null; }
+FK.edit = null;
+// the people on the planet: rebuild everybody who has their own look
+{ const _p = fkPopulate; fkPopulate = (...a) => { const r = _p(...a);
+    let ai = 0, ki = 0; FK.people.forEach((p, all) => { const k = p.kid ? 'k' : 'a', i = p.kid ? ki++ : ai++; if (!pvHas(k, i)) return;
+      const D = pvEff(k, i), sz = (p.kid ? FOLK.kidSize : FOLK.adultSize) * (D.size || 1), ng = makeFolkFig(D, pvOutfit(k, i, all), p.kid);
+      ng.scale.setScalar(sz); ng.position.copy(p.g.position); ng.rotation.copy(p.g.rotation);
+      if (p.label) { ng.add(p.label); p.label.position.y = ng.userData.h + 0.45; p.label.scale.set(3.2, 0.6, 1).multiplyScalar(1 / Math.max(0.3, sz)); }
+      mineScene.remove(p.g); mineScene.add(ng); p.g = ng; p.sz = sz; p.sp = (p.kid ? 1.6 : 1.2) * Math.sqrt(sz) * Math.sqrt(D.legs); });
+    return r; }; }
+// the preview shows only the person you are editing
+{ const _v = fkPreview; fkPreview = (...a) => {
+    if (!FK.edit) return _v(...a); if (!FK.prScene) return;
+    const { k, i } = FK.edit; if (FK.prGrp) FK.prScene.remove(FK.prGrp); const g = FK.prGrp = new THREE.Group(); FK.prScene.add(g);
+    const D = pvEff(k, i), all = k === 'a' ? i : Math.round(FOLK.adults) + i, f = makeFolkFig(D, pvOutfit(k, i, all), k === 'k'); g.add(f);
+    const h = f.userData.h, dist = Math.max(h * 1.75, (1 + D.chest) * 2.2); FK.prCam.position.set(0, h * 0.55, dist); FK.prCam.lookAt(0, h * 0.48, 0); FK.prH = h; }; }
+// the maker window
+{ const _t = fkTab; fkTab = tab => {
+    if (tab !== 'body') FK.edit = null;
+    _t(tab); const d = FK.el, tc = d && d.querySelector('.tc'); if (!tc) return;
+    d.querySelectorAll('.tabs [data-tab]').forEach(btn => { btn.onclick = () => { FK.edit = null; fkTab(btn.dataset.tab); fkPreview(); }; });
+    if (tab === 'names') {   // a ✏️ button next to every person
+      const hint = document.createElement('div'); hint.style.cssText = 'font-size:13px;color:#ffe14d;margin-top:4px'; hint.textContent = pvL('✏️ – padaryk šį žmogų kitokį (kūnas, spalva, rūbai, dydis)', '✏️ – make this person different (body, colour, clothes, size)'); tc.children[0] && tc.children[0].appendChild(hint);
+      tc.querySelectorAll('input[data-p="l"]').forEach(inp => { const k = inp.dataset.k === 'anames' ? 'a' : 'k', i = +inp.dataset.i, b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (pvHas(k, i) ? ' on' : ''); b.style.cssText = 'padding:6px 9px'; b.textContent = '✏️'; b.title = pvL('Padaryk kitokį', 'Make different');
+        b.onclick = () => { FK.edit = { k, i }; fkTab('body'); fkPreview(); }; inp.parentElement.appendChild(b); });
+      return;
+    }
+    if (tab !== 'body' || !FK.edit) return;
+    const { k, i } = FK.edit, D = pvEff(k, i), outs = FOLK.outfits, cur = (pvOver(k, i) || {}).outfit;
+    const head = document.createElement('div'); head.style.cssText = 'background:rgba(255,225,77,.15);border:1px solid rgba(255,225,77,.5);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px';
+    head.innerHTML = `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="color:#ffe14d">✏️ ${pvL('Keiti tik', 'Changing only')}: ${pvName(k, i)}</b><button type="button" class="btn" data-pvall>← ${pvL('Visi žmonės', 'Everybody')}</button></div>
+      <div class="row"><label>👕 ${pvL('Rūbai', 'Clothes')}</label><select data-pvout style="flex:1;padding:6px;border-radius:8px;background:#1c1430;color:#fff;border:1px solid rgba(255,255,255,.3)"><option value="auto">${pvL('Kaip visiems (paeiliui)', 'Like everybody (in turn)')}</option><option value="-1">${pvL('Be rūbų', 'No clothes')}</option>${outs.map((_, j) => `<option value="${j}">${pvL('Rūbas', 'Outfit')} ${j + 1}</option>`).join('')}</select></div>
+      <div class="row"><label>📏 ${pvL('Dydis', 'Size')}</label><input type="range" data-pvsize min="0.4" max="2.5" step="0.05" value="${D.size || 1}"><span class="v">${(+(D.size || 1)).toFixed(2)}</span></div>`;
+    tc.insertBefore(head, tc.firstChild);
+    const sel = head.querySelector('[data-pvout]'); sel.value = cur === undefined ? 'auto' : String(cur);
+    sel.onchange = () => { const a = pvArr(k); a[i] = Object.assign({}, a[i] || {}); if (sel.value === 'auto') delete a[i].outfit; else a[i].outfit = +sel.value; fkSave(); FK.dirty = true; fkPreview(); };
+    head.querySelector('[data-pvall]').onclick = () => { FK.edit = null; fkTab('names'); fkPreview(); };
+    const sz = head.querySelector('[data-pvsize]'); sz.oninput = () => { pvSet(k, i, 'size', +sz.value); sz.nextElementSibling.textContent = (+sz.value).toFixed(2); fkPreview(); };
+    tc.querySelectorAll('input[type=range][data-k]').forEach(inp => { inp.value = D[inp.dataset.k]; inp.nextElementSibling.textContent = (+D[inp.dataset.k]).toFixed(2);
+      inp.oninput = () => { pvSet(k, i, inp.dataset.k, +inp.value); inp.nextElementSibling.textContent = (+inp.value).toFixed(2); fkPreview(); }; });
+    tc.querySelectorAll('[data-col]').forEach(s => { s.classList.toggle('on', s.dataset.col === D.color); s.onclick = () => { pvSet(k, i, 'color', s.dataset.col); fkTab('body'); fkPreview(); }; });
+    const ci = tc.querySelector('[data-colin]'); if (ci) { ci.value = D.color; ci.oninput = () => { pvSet(k, i, 'color', ci.value); fkPreview(); }; }
+    const rs = tc.querySelector('[data-reset]'); if (rs) { rs.textContent = '↺ ' + pvL('Padaryti kaip visus', 'Make like everybody'); rs.onclick = () => { pvArr(k)[i] = null; fkSave(); FK.dirty = true; fkTab('body'); fkPreview(); }; }
+  }; }
 </script>
 </html>
