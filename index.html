@@ -18154,5 +18154,77 @@ FK.edit = null;
     const ci = tc.querySelector('[data-colin]'); if (ci) { ci.value = D.color; ci.oninput = () => { pvSet(k, i, 'color', ci.value); fkPreview(); }; }
     const rs = tc.querySelector('[data-reset]'); if (rs) { rs.textContent = '↺ ' + pvL('Padaryti kaip visus', 'Make like everybody'); rs.onclick = () => { pvArr(k)[i] = null; fkSave(); FK.dirty = true; fkTab('body'); fkPreview(); }; }
   }; }
+
+// ================= house signs 🏠: build a house, put a sign on it, write a family's surname – it is their home =================
+const hsL = (lt, en) => EN ? en : lt;
+const HS = { signs: {}, el: null, key: null };   // "x,y,z" -> surname
+try { HS.signs = JSON.parse(localStorage.getItem('modly-houses') || '{}') || {}; } catch (_) { }
+function hsSave() { try { localStorage.setItem('modly-houses', JSON.stringify(HS.signs)); } catch (_) { } }
+const HS_T = MN_TYPES.length; MN_TYPES.push({ lt: 'Namo lentelė', en: 'House sign', obj: 'sign', c: 0xc8903a });
+function hsTex(text) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 224; const x = c.getContext('2d');
+  x.fillStyle = '#f4e2b8'; x.fillRect(0, 0, 512, 224); x.strokeStyle = '#7a4a1a'; x.lineWidth = 14; x.strokeRect(7, 7, 498, 210);
+  x.fillStyle = '#5a3412'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = "bold 40px 'Lilita One', sans-serif"; x.fillText('🏠', 256, 52);
+  let fs = 64; x.font = `bold ${fs}px 'Lilita One', sans-serif`; while (x.measureText(text).width > 470 && fs > 26) { fs -= 4; x.font = `bold ${fs}px 'Lilita One', sans-serif`; } x.fillText(text, 256, 140);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+}
+function hsLabel(g, text) {
+  const b = g.userData.board; if (!b) return; const m = b.material; if (m.map) m.map.dispose(); m.map = hsTex(text || '?'); m.needsUpdate = true;
+}
+{ const _mk = mnMake; mnMake = t => {
+    if (t !== HS_T) return _mk(t);
+    const g = new THREE.Group(), wood = mat(0x8a5a2b);
+    g.add(S(G.cyl, wood, 0.08, 1.7, 0.08, 0, 0.85, 0));
+    const board = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.92, 0.1), [wood, wood, wood, wood, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 }), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 })]);
+    board.position.y = 1.95; g.add(board); board.material[5].map = board.material[4].map = hsTex('?');
+    // both sides show the same name
+    const mm = board.material[4]; board.material[5] = mm; g.userData.board = { material: mm };
+    linearize(g); return g; }; }
+{ const _p = mnPut; mnPut = (x, y, z, t, quiet) => {
+    const ok = _p(x, y, z, t, quiet); if (!ok || t !== HS_T) return ok;
+    const key = mnKey(x, y, z), g = MN.cells.get(key); if (g) hsLabel(g, HS.signs[key]);
+    if (!quiet) setTimeout(() => hsOpen(key), 120);
+    return ok; }; }
+{ const _d = mnDel; mnDel = g => { const c = g.userData.cell; if (c && c[3] === HS_T) { delete HS.signs[mnKey(c[0], c[1], c[2])]; hsSave(); FK.dirty = true; } return _d(g); }; }
+// families on the planet (from the names in the people maker)
+function hsFamilies() { const m = {}; [...(FOLK.anames || []), ...(FOLK.knames || [])].forEach(n => { const s = fnSur(n); if (s && !m[s]) m[s] = n.l.trim(); }); return m; }
+function hsHomeOf(stem) { for (const k in HS.signs) if (fnSur({ l: HS.signs[k] }) === stem && MN.cells.has(k)) { const [x, y, z] = k.split(',').map(Number); return new V3(x, y, z); } return null; }
+// the "whose house is this?" window
+function hsOpen(key) {
+  HS.key = key; card = { kind: 'house' }; for (const k in keys) keys[k] = false; try { document.exitPointerLock && document.exitPointerLock(); } catch (_) { }
+  if (!HS.el) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;background:rgba(10,8,20,.5);font:600 15px system-ui,sans-serif;color:#fff';
+    ['keydown', 'keyup', 'mousedown', 'click', 'wheel'].forEach(ev => d.addEventListener(ev, e => e.stopPropagation())); document.body.appendChild(d); HS.el = d; }
+  const fams = hsFamilies(), cur = HS.signs[key] || '';
+  HS.el.innerHTML = `<div style="width:min(420px,calc(100vw - 32px));background:rgba(40,26,12,.97);border:2px solid #c8903a;border-radius:18px;padding:18px;text-align:center">
+    <div style="font:400 28px 'Lilita One',system-ui;color:#ffd890">🏠 ${hsL('Kieno šis namas?', 'Whose house is this?')}</div>
+    <div style="opacity:.8;margin:4px 0 10px;font-size:14px">${hsL('Parašyk šeimos pavardę – šis namas bus jų. Šeima gyvens prie savo namo.', 'Write a family surname – this house will be theirs. The family will live by their house.')}</div>
+    ${Object.keys(fams).length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:8px">${Object.values(fams).map(n => `<button type="button" data-fam="${n.replace(/"/g, '')}" style="padding:8px 12px;border-radius:10px;border:none;background:#ffd890;color:#3a2200;font:800 15px system-ui;cursor:pointer">👪 ${n}</button>`).join('')}</div>` : `<div style="font-size:13px;opacity:.7;margin-bottom:8px">${hsL('Dar nėra šeimų – vardus ir pavardes žmonėms duok gyventojų kūrėjo skirtuke „Vardai“ (P).', 'No families yet – give people names in the people maker, "Names" tab (P).')}</div>`}
+    <input data-hsn maxlength="18" value="${cur.replace(/"/g, '')}" placeholder="${hsL('Pavardė', 'Surname')}" style="width:100%;box-sizing:border-box;padding:11px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.3);color:#fff;font:700 17px system-ui;text-align:center">
+    <button type="button" data-hsok style="width:100%;margin-top:8px;padding:12px;border-radius:12px;border:none;background:#9aff7a;color:#13301a;font:800 16px system-ui;cursor:pointer">✅ ${hsL('Atiduoti namą', 'Give the house')}</button>
+    <button type="button" data-hsx style="width:100%;margin-top:8px;padding:8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;font:700 14px system-ui;cursor:pointer">${hsL('Vėliau (Esc)', 'Later (Esc)')}</button></div>`;
+  HS.el.hidden = false; const inp = HS.el.querySelector('[data-hsn]'); setTimeout(() => inp.focus(), 50);
+  HS.el.querySelectorAll('[data-fam]').forEach(b => b.onclick = () => { inp.value = b.dataset.fam; hsDone(true); });
+  HS.el.querySelector('[data-hsok]').onclick = () => hsDone(true); HS.el.querySelector('[data-hsx]').onclick = () => hsDone(false);
+  inp.onkeydown = e => { if (e.key === 'Enter') hsDone(true); if (e.key === 'Escape') hsDone(false); };
+}
+function hsDone(save) {
+  if (save) { const v = HS.el.querySelector('[data-hsn]').value.trim(); const g = MN.cells.get(HS.key);
+    if (v) HS.signs[HS.key] = v; else delete HS.signs[HS.key]; hsSave(); if (g) hsLabel(g, v); FK.dirty = true;
+    if (v) { const fam = FK.people.filter(p => fnSur(p.nm) === fnSur({ l: v })).length; toast(hsL(`🏠 Namas atiduotas: ${v}`, `🏠 House given: ${v}`), fam ? hsL(`Šeima (${fam}) dabar gyvena čia`, `The family (${fam}) lives here now`) : hsL('Tokios šeimos dar nėra – duok žmonėms šią pavardę (P → Vardai)', 'There is no such family yet – give people this surname (P → Names)'), '#ffd890'); tone(660, 0.15, { to: 990, type: 'triangle', vol: 0.05 }); } }
+  HS.el.hidden = true; if (card && card.kind === 'house') card = null; if (!lockFailed && started) requestLock();
+}
+addEventListener('keydown', e => { if (HS.el && !HS.el.hidden && e.code === 'Escape') { e.stopImmediatePropagation(); e.preventDefault(); hsDone(false); } }, true);
+{ const _o = openPause; openPause = (...a) => { if (HS.el && !HS.el.hidden) return; return _o(...a); }; }
+// E next to a sign – change whose house it is
+const hsNear = () => { let best = null, bd = 2.6; for (const [k, g] of MN.cells) { const c = g.userData.cell; if (c[3] !== HS_T) continue; const d = Math.hypot(c[0] - player.pos.x, c[2] - player.pos.z); if (d < bd && Math.abs(c[1] - player.pos.y) < 4) { bd = d; best = k; } } return best; };
+{ const _m = mineAction; mineAction = (...a) => { if (!card && !FK.open) { const k = hsNear(); if (k) { hsOpen(k); return; } } return _m(...a); }; }
+{ const _u = updateMine; updateMine = (dt, t) => { _u(dt, t); if (!card) { const k = hsNear(); if (k) setPrompt(hsL(`<kbd>E</kbd> 🏠 ${HS.signs[k] ? 'namas: ' + HS.signs[k] + ' (keisti)' : 'kieno šis namas?'}`, `<kbd>E</kbd> 🏠 ${HS.signs[k] ? 'house: ' + HS.signs[k] + ' (change)' : 'whose house is this?'}`)); } }; }
+// families live by their house
+{ const _p = fkPopulate; fkPopulate = (...a) => { const r = _p(...a);
+    FK.people.forEach(p => { const h = hsHomeOf(fnSur(p.nm)); p.home = h; if (h) { p.x = h.x + rr(-3, 3); p.z = h.z + rr(-3, 3); if (fkBlocked(p.x, p.z)) { p.x = h.x; p.z = h.z + 1.5; } p.g.position.set(p.x, 0, p.z); } });
+    return r; }; }
+{ const _u = fkUpdate; fkUpdate = (dt, t) => {
+    for (const p of FK.people) if (p.home) { const d = Math.hypot(p.x - p.home.x, p.z - p.home.z); if (d > 7) { p.hd = Math.atan2(p.home.x - p.x, p.home.z - p.z); p.walk = true; if (p.t > 1) p.t = 1; } }
+    return _u(dt, t); }; }
 </script>
 </html>
