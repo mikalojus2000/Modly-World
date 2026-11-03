@@ -18356,6 +18356,7 @@ function mpHeldHide(r) { if (r.heldG && r.heldG.parent) r.heldG.parent.remove(r.
     try {
       if (d.k === 'hit') { if (d.to === MP.myId) mpGotHit(d); return; }
       if (d.k === 'ko') { toast(mpL(`💥 ${d.by} nugalėjo ${d.who}!`, `💥 ${d.by} beat ${d.who}!`), '', mpCol(d.c)); return; }
+      if ((d.k === 'grab' || d.k === 'drop') && mode === 'planet' && MP.peers.get(d.id) && MP.peers.get(d.id).m === 'planet') { if (d.k === 'grab') toast(mpL(`✋ ${d.from} paėmė: ${d.n}`, `✋ ${d.from} picked up: ${d.n}`), '', mpCol(MP.peers.get(d.id).slot)); return; }   // on the planet the things themselves are shared (mp3)
       if (d.k === 'grab' || d.k === 'drop') { const r = MP.peers.get(d.id); if (!r) return; const p = new V3().fromArray(d.p);
         if (d.k === 'grab') { let best = null, bd = 4; if (mode === 'planet' && r.m === 'planet') for (const b of bodies) { if (b.held || b.name !== d.n) continue; const dd = b.pos.distanceTo(p); if (dd < bd) { bd = dd; best = b; } }
           if (best) { best.held = 'remote'; best.mesh.visible = false; r.heldBody = best; } else r.heldBody = null; mpHeldShow(r, best, d.n);
@@ -18368,6 +18369,73 @@ function mpHeldHide(r) { if (r.heldG && r.heldG.parent) r.heldG.parent.remove(r.
 { const _d = mpDrop; mpDrop = id => { const r = MP.peers.get(id); if (r && r.heldBody) { r.heldBody.held = null; r.heldBody.mesh.visible = true; } return _d(id); }; }
 // flash the remote player you hit
 fx.push(dt => { if (!MP.on) return true; for (const r of MP.peers.values()) if (r.g && r.g.userData.flash > 0) { r.g.userData.flash -= dt; const s = 0.85 * (1 + Math.max(0, r.g.userData.flash) * 0.8); r.g.scale.setScalar(s); if (r.g.userData.flash <= 0) r.g.scale.setScalar(0.85); } return true; });
+
+// ================= MULTIPLAYER 3: everyone sees the SAME things on the first planet =================
+// The room creator (host) owns all loose things (boxes, balls, things that fall from the sky…). The others get the same
+// things from the host, see where they are 5 times a second, and can pick them up and throw them.
+const MP3 = { id: 0, synced: {}, holdBy: {}, loader: null, reqT: 0, t: 0 };
+const mp3On = () => MP.on && mode === 'planet';
+const mp3Find = id => bodies.find(b => b.nid === id);
+function mp3Pack(b) { let j = null; try { j = b.mesh.toJSON(); } catch (_) { } return { id: b.nid, j, p: b.pos.toArray(), r: b.rad, n: b.name }; }
+// every loose thing gets a number
+{ const _s = spawnBody; spawnBody = (m, pos, rad, name) => {
+    const b = _s(m, pos, rad, name); b.nid = ++MP3.id;
+    if (MP.on && !MP.host && !MP3.making) { const i = bodies.indexOf(b); if (i >= 0) bodies.splice(i, 1); world.remove(b.mesh); return b; }   // a guest: only the host makes things
+    if (MP.on && MP.host && MP.conns.length) mpSend({ t: 'bspawn', b: mp3Pack(b) });
+    return b; }; }
+function mp3Make(pk) {
+  if (!pk || mp3Find(pk.id)) return; if (!MP3.loader) MP3.loader = new THREE.ObjectLoader();
+  let m; try { m = pk.j ? MP3.loader.parse(pk.j) : null; } catch (_) { m = null; } if (!m) { m = new THREE.Group(); m.add(S(G.box, mat(0xb57a3c), 1, 1, 1, 0, 0.5, 0)); }
+  MP3.making = true; const b = spawnBody(m, new V3().fromArray(pk.p), pk.r || 0.5, pk.n || '?'); MP3.making = false;
+  b.nid = pk.id; b.held = 'net'; b.mesh.position.copy(b.pos);
+}
+function mp3Clear() { for (let i = bodies.length - 1; i >= 0; i--) { const b = bodies[i]; if (hands.L.item === b || hands.R.item === b) continue; world.remove(b.mesh); bodies.splice(i, 1); } }
+// ---------- host: send everything to a guest who comes to the planet, and the positions 5× a second ----------
+fx.push(dt => {
+  if (!MP.on || !MP.host) return true; MP3.t -= dt; if (MP3.t > 0) return true; MP3.t = 0.2;
+  const l = bodies.filter(b => b.nid).map(b => { const q = b.mesh.quaternion, p = b.mesh.position; return [b.nid, +p.x.toFixed(3), +p.y.toFixed(3), +p.z.toFixed(3), +q.x.toFixed(3), +q.y.toFixed(3), +q.z.toFixed(3), +q.w.toFixed(3), b.held === 'L' || b.held === 'R' ? MP.myId : (MP3.holdBy[b.nid] || '')]; });
+  MP.conns.forEach(c => { if (!c.open) return; const r = MP.peers.get(c.peer); if (!r || r.m !== 'planet') { delete MP3.synced[c.peer]; return; }
+    if (!MP3.synced[c.peer]) { MP3.synced[c.peer] = true; c.send({ t: 'bfull', l: bodies.filter(b => b.nid).map(mp3Pack) }); }
+    c.send({ t: 'bst', l }); });
+  return true;
+});
+// ---------- messages ----------
+{ const _o = mpOnData; mpOnData = (d, c) => {
+    if (d && d.t === 'bfull' && !MP.host) { if (mode === 'planet') { mp3Clear(); d.l.forEach(mp3Make); } return; }
+    if (d && d.t === 'bspawn' && !MP.host) { if (mode === 'planet') mp3Make(d.b); return; }
+    if (d && d.t === 'bst' && !MP.host) { if (mode === 'planet') mp3State(d.l); return; }
+    if (d && d.t === 'bsync' && MP.host) { delete MP3.synced[c.peer]; return; }
+    if (d && d.t === 'bhold' && MP.host) { const b = mp3Find(d.id); if (b) { b.mesh.position.fromArray(d.p); b.pos.fromArray(d.p); b.up.copy(b.pos.clone().normalize()); b.mesh.quaternion.fromArray(d.q); } return; }
+    if (d && d.t === 'ev' && MP.host && (d.k === 'bgrab' || d.k === 'bdrop')) { const b = mp3Find(d.id);
+      if (b && d.k === 'bgrab' && !b.held) { b.held = 'remote'; MP3.holdBy[b.nid] = c.peer; }
+      if (b && d.k === 'bdrop' && MP3.holdBy[b.nid] === c.peer) { delete MP3.holdBy[b.nid]; b.held = null; b.pos.fromArray(d.p); b.up.copy(b.pos.clone().normalize()); b.vel.fromArray(d.v || [0, 0, 0]); b.vr = d.vr || 0; b.grounded = false; }
+      return _o(d, c); }
+    return _o(d, c); }; }
+function mp3State(l) {
+  const seen = new Set(); let missing = false;
+  for (const e of l) { seen.add(e[0]); const b = mp3Find(e[0]); if (!b) { missing = true; continue; }
+    if (hands.L.item === b || hands.R.item === b) continue;
+    b.netHolder = e[8] || ''; b.held = 'net'; b.mesh.position.set(e[1], e[2], e[3]); b.mesh.quaternion.set(e[4], e[5], e[6], e[7]); b.pos.copy(b.mesh.position); b.up.copy(b.pos.clone().normalize()); b.mesh.visible = true; }
+  for (let i = bodies.length - 1; i >= 0; i--) { const b = bodies[i]; if (!b.nid || seen.has(b.nid) || hands.L.item === b || hands.R.item === b) continue; world.remove(b.mesh); bodies.splice(i, 1); }
+  if (missing && performance.now() > MP3.reqT) { MP3.reqT = performance.now() + 3000; mpSend({ t: 'bsync' }); }
+}
+// ---------- a guest picks up / throws a thing ----------
+{ const _g = tryGrab; tryGrab = side => {
+    if (!(mp3On() && !MP.host)) return _g(side);
+    const freed = []; for (const b of bodies) if (b.held === 'net' && !b.netHolder) { b.held = null; freed.push(b); }
+    const ok = _g(side); for (const b of freed) if (b.held !== side) b.held = 'net';
+    if (ok) { const b = hands[side].item; if (b && b.nid) mpSend({ t: 'ev', k: 'bgrab', id: b.nid, from: MP.name }); }
+    return ok; }; }
+{ const _u = handUp; handUp = (side, gentle) => {
+    const b = hands[side] && hands[side].item; const r = _u(side, gentle);
+    if (b && b.nid && mp3On() && !MP.host) { mpSend({ t: 'ev', k: 'bdrop', id: b.nid, p: b.pos.toArray(), v: b.vel.toArray(), vr: b.vr }); b.held = 'net'; }
+    return r; }; }
+// while a guest holds a thing, it tells the host where it is
+fx.push(dt => { if (!(mp3On() && !MP.host)) return true; MP3.ht = (MP3.ht || 0) - dt; if (MP3.ht > 0) return true; MP3.ht = 0.1; for (const s of ['L', 'R']) { const b = hands[s].item; if (b && b.nid && b.mesh) { b.mesh.updateMatrixWorld(); const p = new V3(), q = new THREE.Quaternion(); b.mesh.getWorldPosition(p); b.mesh.getWorldQuaternion(q); mpSend({ t: 'bhold', id: b.nid, p: p.toArray(), q: q.toArray() }); } } return true; });
+// when the room ends, a guest keeps the things it has (they stop being "net" things)
+{ const _l = mpLeave; mpLeave = (...a) => { const wasGuest = MP.on && !MP.host; const r = _l(...a); if (wasGuest) for (const b of bodies) if (b.held === 'net') { b.held = null; b.netHolder = ''; } MP3.synced = {}; MP3.holdBy = {}; return r; }; }
+// a guest who comes back to the planet asks for everything again
+{ let lastMode = ''; fx.push(() => { if (MP.on && !MP.host && mode === 'planet' && lastMode !== 'planet') mpSend({ t: 'bsync' }); lastMode = mode; return true; }); }
 
 // ================= GoatCounter statistics (only in the public GitHub game) =================
 // https://mikalojus2000.goatcounter.com – page views + events: login, new account, game start, multiplayer room / join
