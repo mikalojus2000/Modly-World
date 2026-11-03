@@ -16488,8 +16488,13 @@ function famAtkBall() { const B = FM.B, from = famBossPos().clone().add(new V3(0
   const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color: B.col, transparent: true, opacity: 0.7, depthWrite: false, blending: THREE.AdditiveBlending })); gl.scale.setScalar(3.5); m.add(gl);
   m.position.copy(from); const tgt = player.pos.clone().add(new V3(0, 1, 0)).addScaledVector(player.vel, 0.4); const v = tgt.sub(from).normalize().multiplyScalar(17 + FAM.boss * 3);
   FM.grp.add(m); FM.atk.push({ type: 'ball', m, v, t: 0 }); tone(300, 0.2, { to: 150, type: 'sine', vol: 0.04 }); }
-function famAtkRing() { const B = FM.B, m = new THREE.Mesh(new THREE.TorusGeometry(1, 0.35, 6, 48), new THREE.MeshBasicMaterial({ color: B.kind === 'wind' ? 0xffffff : B.col, transparent: true, opacity: 0.8, depthWrite: false })); m.rotation.x = Math.PI / 2;
-  const c = famBossPos().clone().setY(0.35); m.position.copy(c); FM.grp.add(m); FM.atk.push({ type: 'ring', m, c, r: 1, t: 0, hit: false }); noiseHit(0.5, { ft: 'lowpass', f: 600, vol: 0.12 });
+const FM_RING_WALL = new THREE.CylinderGeometry(1, 1, 0.4, 72, 1, true), FM_RING_GLOW = new THREE.CylinderGeometry(1, 1, 1.1, 72, 1, true), FM_RING_FLOOR = new THREE.RingGeometry(0.985, 1, 72);
+function famAtkRing() {   // a thin bright RED wave on the ground: low (0.4 m), so you can jump over it
+  const m = new THREE.Group();
+  m.add(new THREE.Mesh(FM_RING_WALL, new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.95, side: THREE.DoubleSide, depthWrite: false, toneMapped: false })).translateY(0.2));
+  m.add(new THREE.Mesh(FM_RING_GLOW, new THREE.MeshBasicMaterial({ color: 0xff0000, toneMapped: false, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending })).translateY(0.55));
+  const fl = new THREE.Mesh(FM_RING_FLOOR, new THREE.MeshBasicMaterial({ color: 0xc80000, toneMapped: false, transparent: true, opacity: 0.95, side: THREE.DoubleSide, depthWrite: false })); fl.rotation.x = -Math.PI / 2; fl.position.y = 0.03; m.add(fl);
+  const c = famBossPos().clone().setY(0); m.position.copy(c); FM.grp.add(m); FM.atk.push({ type: 'ring', m, c, r: 1, t: 0, hit: false }); noiseHit(0.5, { ft: 'lowpass', f: 600, vol: 0.12 });
   famHint(fmL('🌊 Banga! Šok (Space)!', '🌊 A wave! Jump (Space)!'), ''); }
 function famAtkZone(p) { const m = new THREE.Mesh(new THREE.RingGeometry(2.6, 3.2, 32), new THREE.MeshBasicMaterial({ color: 0xff2a2a, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false })); m.rotation.x = -Math.PI / 2; m.position.copy(p).setY(0.06);
   const in2 = new THREE.Mesh(new THREE.CircleGeometry(3.2, 32), new THREE.MeshBasicMaterial({ color: 0xff2a2a, transparent: true, opacity: 0.15, side: THREE.DoubleSide, depthWrite: false })); m.add(in2);
@@ -16586,7 +16591,7 @@ function updateFam(dt, t) {
   }
   for (let k = FM.atk.length - 1; k >= 0; k--) { const a = FM.atk[k]; a.t += dt; let gone = false;
     if (a.type === 'ball') { a.m.position.addScaledVector(a.v, dt); if (a.m.position.distanceTo(player.pos.clone().add(new V3(0, 1, 0))) < 1.3 + FAM.boss * 0.1) { famHurtPlayer(B.dmg); gone = true; } if (a.t > 5 || a.m.position.y < -1) gone = true; }
-    else if (a.type === 'ring') { a.r += dt * (11 + FAM.boss); a.m.scale.set(a.r, a.r, 1); const dd = Math.hypot(player.pos.x - a.c.x, player.pos.z - a.c.z); if (!a.hit && Math.abs(dd - a.r) < 0.9 && player.pos.y < 0.8) { a.hit = true; famHurtPlayer(B.dmg + 4); } a.m.material.opacity = Math.max(0, 0.8 - a.r / 90); if (a.r > 66) gone = true; }
+    else if (a.type === 'ring') { a.r += dt * (11 + FAM.boss); a.m.scale.set(a.r, 1, a.r); const dd = Math.hypot(player.pos.x - a.c.x, player.pos.z - a.c.z); if (!a.hit && Math.abs(dd - a.r) < 0.6 && player.pos.y < 0.45) { a.hit = true; famHurtPlayer(B.dmg + 4); } if (a.r > 56) a.m.children.forEach(o => { o.material.opacity *= 0.9; }); if (a.r > 66) gone = true; }
     else if (a.type === 'zone') { a.m.scale.setScalar(1 + Math.sin(a.t * 20) * 0.04); if (a.t > 1.4) { famZoneBoom(a); gone = true; } }
     if (gone) { FM.grp.remove(a.m); FM.atk.splice(k, 1); } }
   // tornadoes
