@@ -18238,5 +18238,26 @@ function mnFloor(t) {
   tone(520, 0.12, { to: 780, type: 'triangle', vol: 0.05 }); toast(gL('🟫 Naujos grindys: ', '🟫 New floor: ') + gL(T.lt, T.en), gL('Pasirink kitą kaladėlę ir vėl spausk F', 'Choose another block and press F again'), '#ffe14d');
 }
 { const _b = buildMine; buildMine = (...a) => { const first = !MN.built; const r = _b(...a); if (first && MN.ground) { MN.groundMat0 = MN.ground.material; let t = null; try { t = localStorage.getItem('modly-myfloor'); } catch (_) { } if (t !== null && MN_TYPES[+t]) mnFloorApply(+t); } return r; }; }
+
+// ================= GoatCounter statistics (only in the public GitHub game) =================
+// https://mikalojus2000.goatcounter.com – page views + events: login, new account, game start, multiplayer room / join
+const GC = { q: [], ok: false };
+function gcEvent(path, title) {
+  if (!window.MODLY_PUBLIC) return;
+  const e = { path: 'event/' + path, title: title || path, event: true };
+  if (GC.ok && window.goatcounter && window.goatcounter.count) { try { window.goatcounter.count(e); } catch (_) { } } else GC.q.push(e);
+}
+if (window.MODLY_PUBLIC) {
+  try {
+    const s = document.createElement('script'); s.async = true; s.src = 'https://gc.zgo.at/count.js'; s.dataset.goatcounter = 'https://mikalojus2000.goatcounter.com/count';
+    s.onload = () => { GC.ok = true; const q = GC.q.splice(0); q.forEach(e => { try { window.goatcounter.count(e); } catch (_) { } }); };
+    document.head.appendChild(s);
+  } catch (_) { }
+  { const _e = acEnter; acEnter = (...a) => { gcEvent('login', 'Prisijungimas / Login'); return _e(...a); }; }
+  { const _s = acSaveList; acSaveList = (...a) => { gcEvent('new-account', 'Nauja paskyra / New account'); return _s(...a); }; }
+  { let was = false; fx.push(() => { if (started && !was) gcEvent('start', 'Žaidimo pradžia / Game start'); was = started; return true; }); }
+  { const _h = mpHost; mpHost = (...a) => { gcEvent('mp-room', 'Multiplayer kambarys / room'); return _h(...a); }; }
+  { const _j = mpJoin; mpJoin = (...a) => { gcEvent('mp-join', 'Multiplayer prisijungimas / join'); return _j(...a); }; }
+}
 </script>
 </html>
