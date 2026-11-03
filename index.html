@@ -16726,7 +16726,7 @@ const FK_HI = [['Labas, kūrėjau! 👑', 'Hi, creator! 👑'], ['Ačiū, kad ma
 // ---------- the maker window ----------
 { const _o = openPause; openPause = (...a) => { if (FK.open) return; return _o(...a); }; }
 addEventListener('keydown', e => {
-  if (FK.open) { if (e.code === 'Escape' || e.code === 'KeyP') fkClose(); e.stopImmediatePropagation(); if (e.code !== 'Tab') e.preventDefault(); return; }
+  if (FK.open) { const typing = e.target && e.target.tagName === 'INPUT' && e.target.type !== 'range' && e.target.type !== 'color'; if (e.code === 'Escape' || (e.code === 'KeyP' && !typing)) fkClose(); e.stopImmediatePropagation(); if (e.code !== 'Tab' && !typing) e.preventDefault(); return; }
   if (mode === 'mine' && started && !card && e.code === 'KeyP' && !e.repeat) { e.stopImmediatePropagation(); e.preventDefault(); fkOpen(); }
 }, true);
 function fkOpen() {
@@ -18034,5 +18034,51 @@ fx.push(() => {
   if (!shown) { try { localStorage.setItem('modly-godfly', '1'); } catch (_) { } setTimeout(() => toast(EN ? '👑 A god can fly everywhere!' : '👑 Dievas gali skristi visur!', EN ? 'Jump and hold Space – fly up · Shift – faster' : 'Pašok ir laikyk Space – skrendi aukštyn · Shift – greičiau', '#ffe14d'), 4000); }
   return false;
 });
+
+// ================= names for the people of My planet 📛 – the same surname = one family =================
+if (!Array.isArray(FOLK.anames)) FOLK.anames = [];
+if (!Array.isArray(FOLK.knames)) FOLK.knames = [];
+const fnL = (lt, en) => EN ? en : lt;
+const fnFull = n => n ? [n.f, n.l].filter(Boolean).join(' ').trim() : '';
+// family key = the surname's stem, so Lithuanian forms match: Jonaitis = Jonaitienė (wife) = Jonaitytė (daughter)
+const fnSur = n => { let s = (n && n.l || '').trim().toLowerCase(); if (s.length > 4) for (const e of ['ienė', 'aitė', 'iūtė', 'ytė', 'utė', 'is', 'as', 'us', 'ys', 'ė', 'a']) if (s.endsWith(e) && s.length - e.length >= 3) { s = s.slice(0, -e.length); break; } return s; };
+function fnLabel(text) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 96; const x = c.getContext('2d'); x.font = "bold 46px 'Lilita One', sans-serif"; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.lineWidth = 8; x.strokeStyle = 'rgba(0,0,0,.85)'; x.strokeText(text, 256, 50); x.fillStyle = '#fff6c8'; x.fillText(text, 256, 50);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false })); s.scale.set(3.2, 0.6, 1); return s;
+}
+// after the people are made: give them their names, and let every family walk together
+{ const _p = fkPopulate; fkPopulate = (...a) => { const r = _p(...a);
+    let ai = 0, ki = 0; FK.people.forEach(p => { p.nm = p.kid ? FOLK.knames[ki++] : FOLK.anames[ai++]; const t = fnFull(p.nm);
+      if (t) { const s = fnLabel(t); s.position.y = p.g.userData.h + 0.45; s.scale.multiplyScalar(1 / Math.max(0.3, p.sz)); p.g.add(s); p.label = s; } });
+    const lead = {}; FK.people.forEach(p => { const s = fnSur(p.nm); if (s && !p.kid && !lead[s]) lead[s] = p; });
+    FK.people.forEach(p => { const s = fnSur(p.nm); if (!s) return; const l = lead[s] || FK.people.find(q => fnSur(q.nm) === s && q !== p && !q.kid);
+      p.parent = l && l !== p ? l : (p.kid ? null : p.parent); });
+    return r; }; }
+// name labels only when you are near (so the planet is not full of text)
+fx.push(() => { if (mode === 'mine') FK.people.forEach(p => { if (p.label) p.label.visible = Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < 14; }); return true; });
+// E next to a person – they say their name and their family
+{ const _m = mineAction; mineAction = (...a) => {
+    if (!FK.open && !card && !(player.pos.distanceTo(FK_DESK) < 2.8)) { const p = fkNear(); if (p && fnFull(p.nm)) {
+      const s = fnSur(p.nm), fam = s ? FK.people.filter(q => q !== p && fnSur(q.nm) === s).map(q => fnFull(q.nm)) : [];
+      toast(fnL(`👋 Labas! Aš – ${fnFull(p.nm)}`, `👋 Hi! I am ${fnFull(p.nm)}`), fam.length ? fnL(`Mano šeima: ${fam.join(', ')}`, `My family: ${fam.join(', ')}`) : (s ? fnL('Gyvenu vienas', 'I live alone') : ''), '#ffe14d');
+      p.walk = false; p.t = 3; p.hd = Math.atan2(player.pos.x - p.x, player.pos.z - p.z); tone(pick([660, 784, 880]), 0.12, { type: 'triangle', vol: 0.05 }); return; } }
+    return _m(...a); }; }
+// the "Names" tab in the people maker
+{ const _t = fkTab; fkTab = tab => {
+    const d = FK.el; if (d && !d.querySelector('[data-tab="names"]')) { const b = document.createElement('button'); b.dataset.tab = 'names'; b.textContent = '📛 ' + fnL('Vardai', 'Names'); b.onclick = () => fkTab('names'); d.querySelector('.tabs').appendChild(b); }
+    if (tab !== 'names') return _t(tab);
+    FK.tab = tab; d.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === tab)); const tc = d.querySelector('.tc');
+    const nA = Math.round(FOLK.adults), nK = FOLK.kids ? Math.round(FOLK.nKids) : 0, inp = 'flex:1;min-width:0;padding:7px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.3);color:#fff;font:600 14px system-ui';
+    const row = (k, i, icon) => { const n = FOLK[k][i] || {}; return `<div class="row" style="gap:6px;margin:3px 0"><span style="width:52px;opacity:.8">${icon} ${i + 1}</span><input data-k="${k}" data-i="${i}" data-p="f" maxlength="14" placeholder="${fnL('Vardas', 'Name')}" value="${(n.f || '').replace(/"/g, '')}" style="${inp}"><input data-k="${k}" data-i="${i}" data-p="l" maxlength="16" placeholder="${fnL('Pavardė', 'Surname')}" value="${(n.l || '').replace(/"/g, '')}" style="${inp}"></div>`; };
+    const famTxt = () => { const fams = {}; const nm = {}; [...FOLK.anames.slice(0, nA), ...FOLK.knames.slice(0, nK)].forEach(n => { const s = fnSur(n); if (s) { fams[s] = (fams[s] || 0) + 1; nm[s] = nm[s] || n.l.trim(); } });
+      const t = Object.entries(fams).filter(([, c]) => c > 1).map(([s, c]) => `${nm[s]} (${c})`).join(' · '); return t ? '👪 ' + fnL('Šeimos: ', 'Families: ') + t : ''; };
+    tc.innerHTML = `<div><b>📛 ${fnL('Vardai ir pavardės', 'Names and surnames')}</b><br><small>${fnL('Žmonės su ta pačia pavarde – viena šeima (Jonaitis, Jonaitienė ir Jonaitytė – irgi viena šeima): jie vaikšto kartu, o vaikai – paskui savo tėvus.', 'People with the same surname are one family: they walk together, and the children follow their parents.')}</small></div>
+      <div style="max-height:46vh;overflow:auto;padding-right:4px">${nA ? `<div style="margin-top:6px;color:#ffe14d">🧑 ${fnL('Suaugę', 'Grown-ups')}</div>` : ''}${Array.from({ length: nA }, (_, i) => row('anames', i, '🧑')).join('')}
+      ${nK ? `<div style="margin-top:6px;color:#ffe14d">👶 ${fnL('Vaikai', 'Children')}</div>` : ''}${Array.from({ length: nK }, (_, i) => row('knames', i, '👶')).join('')}
+      ${!nA && !nK ? `<small>${fnL('Pirmiausia skirtuke „Šeima“ pasirink, kiek bus žmonių.', 'First choose how many people there are in the "Family" tab.')}</small>` : ''}</div>
+      <div style="font-size:13px;color:#9aff7a" data-fams>${famTxt()}</div>`;
+    tc.querySelectorAll('input[data-k]').forEach(el => { el.addEventListener('keydown', e => e.stopPropagation()); el.oninput = () => { const k = el.dataset.k, i = +el.dataset.i; FOLK[k][i] = Object.assign({}, FOLK[k][i] || {}, { [el.dataset.p]: el.value.trim() }); fkSave(); FK.dirty = true; const fd = tc.querySelector('[data-fams]'); if (fd) fd.textContent = famTxt(); }; });
+  }; }
 </script>
 </html>
