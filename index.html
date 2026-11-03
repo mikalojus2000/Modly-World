@@ -17736,9 +17736,10 @@ function attract(dt) {
 }
 // hold Space in the air to fly – everywhere, even without a jet-pack or wings
 function freeFly(dt) {
-  if (mode !== 'wind') return;   // free flying with Space (no skin) works only on the Wind planet
+  const isGod = typeof GOD !== 'undefined' && GOD.stage === 'god' && mode !== 'sr';   // a GOD can fly everywhere (not in the speedrun race)
+  if (mode !== 'wind' && !isGod) return;   // otherwise free flying with Space (no skin) works only on the Wind planet
   if (!keys.Space || player.grounded || player.inCar || player.down || card || Q8.back === 'jetpack') return;
-  if (typeof noFlyHere === 'function' && noFlyHere()) return;
+  if (!isGod && typeof noFlyHere === 'function' && noFlyHere()) return;
   if (mode === 'attract' || mode === 'dig' || mode === 'sea') return;
   if (mode === 'planet' && (Q8.back === 'wings' || Q8.back === 'dragonwings')) return;
   const fast = keys.ShiftLeft || keys.ShiftRight;
@@ -18024,6 +18025,14 @@ fx.push(() => {
     GOD.stage = 'god'; GOD.lights = [0, 1, 2, 3, 4]; saveGod(); if (typeof FAM !== 'undefined') { FAM.stage = 'won'; saveFam(); } if (typeof gateKeyRow === 'function') gateKeyRow(); if (typeof godHalo === 'function') godHalo();
     transitioning = true; fadeTo(() => { transitioning = false; cinema = null; portalToPlanet(); toast(EN ? '👑 You have everything!' : '👑 Tu turi viską!', EN ? 'F – cars · I – animals · X – costumes · 1–5 – powers · 5 → My planet' : 'F – mašinos · I – gyvūnai · X – kostiumai · 1–5 – galios · 5 → Mano planeta', '#ffe14d'); }); } catch (e) { console.error(e); } }, 3500);
   return true;
+});
+
+// ================= a GOD can fly everywhere 👑 (hold Space in the air) =================
+fx.push(() => {
+  if (!started || mode === 'attract' || card || cinema || typeof GOD === 'undefined' || GOD.stage !== 'god') return true;
+  let shown = false; try { shown = localStorage.getItem('modly-godfly') === '1'; } catch (_) { }
+  if (!shown) { try { localStorage.setItem('modly-godfly', '1'); } catch (_) { } setTimeout(() => toast(EN ? '👑 A god can fly everywhere!' : '👑 Dievas gali skristi visur!', EN ? 'Jump and hold Space – fly up · Shift – faster' : 'Pašok ir laikyk Space – skrendi aukštyn · Shift – greičiau', '#ffe14d'), 4000); }
+  return false;
 });
 </script>
 </html>
