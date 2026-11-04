@@ -15975,7 +15975,7 @@ function mnMake(t) {
 }
 const mnKey = (x, y, z) => x + ',' + y + ',' + z;
 function mnPut(x, y, z, t, quiet) {
-  const k = mnKey(x, y, z); if (MN.cells.has(k) || MN.cells.size >= 5000) return false;
+  const k = mnKey(x, y, z); if (MN.cells.has(k) || MN.cells.size >= 5000 * (MN.wide || 1)) return false;
   const g = mnMake(t); g.position.set(x, y, z); g.userData.cell = [x, y, z, t]; g.traverse(o => { o.userData.cellRoot = g; }); mineScene.add(g); MN.cells.set(k, g);
   if (!quiet) { tone(400 + t * 30, 0.06, { type: 'triangle', vol: 0.04 }); MN.saveT = 1; } return true;
 }
@@ -16015,7 +16015,7 @@ function mineHand(side) {
   hands[side].hold = true; setTimeout(() => { hands[side].hold = false; }, 150);
   const tg = mnTarget(); if (!tg) return;
   if (side === 'R' || MN_TYPES[MN.sel].erase) { if (tg.root) mnDel(tg.root); return; }
-  if (!tg.place) return; const [x, y, z] = tg.place; if (Math.abs(x) > 40 || Math.abs(z) > 40 || y < 0 || y > 40) return;
+  if (!tg.place) return; const [x, y, z] = tg.place; if (Math.abs(x) > 40 * (MN.wide || 1) || Math.abs(z) > 40 * (MN.wide || 1) || y < 0 || y > 40) return;
   if (Math.abs(player.pos.x - x) < 0.8 && Math.abs(player.pos.z - z) < 0.8 && player.pos.y < y + 1 && player.pos.y + 2 > y) return;   // not inside yourself
   mnPut(x, y, z, MN.sel);
 }
@@ -16035,7 +16035,7 @@ function updateMine(dt, t) {
   const f = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), s = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), v = (keys.Space ? 1 : 0) - (keys.ShiftLeft || keys.ShiftRight ? 1 : 0);
   _rt.crossVectors(player.fwd, UP); _mv.copy(player.fwd).multiplyScalar(f).addScaledVector(_rt, s); if (_mv.lengthSq() > 1) _mv.normalize(); _mv.multiplyScalar(10); _mv.y = v * 8;
   player.vel.lerp(_mv, Math.min(1, dt * 6)); player.pos.addScaledVector(player.vel, dt);
-  player.pos.x = Math.max(-60, Math.min(60, player.pos.x)); player.pos.z = Math.max(-60, Math.min(60, player.pos.z)); player.pos.y = Math.max(0, Math.min(60, player.pos.y));
+  const lim = 40 * (MN.wide || 1) + 20; player.pos.x = Math.max(-lim, Math.min(lim, player.pos.x)); player.pos.z = Math.max(-lim, Math.min(lim, player.pos.z)); player.pos.y = Math.max(0, Math.min(60, player.pos.y));
   player.mesh.position.copy(player.pos).add(new V3(0, Math.sin(t * 2) * 0.1, 0)); orient(player.mesh, UP, player.fwd); animateMan(dt, false, 0);
   const dist = 7, pitch = player.pitch;
   _ct.copy(player.pos).addScaledVector(UP, 1.6 + Math.sin(pitch) * dist).addScaledVector(player.fwd, -Math.cos(pitch) * dist * (frontView ? -1 : 1));
@@ -16716,8 +16716,8 @@ function makeFolkFig(D, out, kid) {
   return g;
 }
 // ---------- the people walk around My planet ----------
-function fkFree() { for (let k = 0; k < 40; k++) { const x = rr(-34, 34), z = rr(-34, 34); if (!fkBlocked(x, z) && Math.hypot(x, z - 32) > 4) return [x, z]; } return [rr(-10, 10), rr(-10, 10)]; }
-function fkBlocked(x, z) { const rx = Math.round(x), rz = Math.round(z); return MN.cells.has(mnKey(rx, 0, rz)) || Math.abs(x) > 39 || Math.abs(z) > 39; }
+function fkFree() { for (let k = 0; k < 40; k++) { const W = 34 * (MN.wide || 1), x = rr(-W, W), z = rr(-W, W); if (!fkBlocked(x, z) && Math.hypot(x, z - 32) > 4) return [x, z]; } return [rr(-10, 10), rr(-10, 10)]; }
+function fkBlocked(x, z) { const rx = Math.round(x), rz = Math.round(z); return MN.cells.has(mnKey(rx, 0, rz)) || Math.abs(x) > 39 * (MN.wide || 1) || Math.abs(z) > 39 * (MN.wide || 1); }
 function fkPopulate() {
   FK.dirty = false; FK.people.forEach(p => mineScene.remove(p.g)); FK.people = []; if (!FOLK.made) return;
   const outs = FOLK.outfits, nA = Math.round(FOLK.adults), nK = FOLK.kids ? Math.round(FOLK.nKids) : 0;
@@ -18469,7 +18469,7 @@ fx.push(dt => { if (!(mp3On() && !MP.host)) return true; MP3.ht = (MP3.ht || 0) 
 // The room creator's game is the world. Friends who join play in that world (same missions, same progress); their own
 // world is kept safe and comes back when they leave. Every change of a mission is sent to all players. The room code
 // stays the same, so you can come back to the same world later.
-const MPW_RE = /^modly-(quest(?!8$)\d+|secret\d+|family|god|teainv|halloween|visited|phone-read2?|thundermet|timemet|catspots|gatetold|spidertaken|spiderdoor|dragonburns|fishgift|farm|ccjet|myplanet|myfloor|folk|houses)$/;
+const MPW_RE = /^modly-(quest(?!8$)\d+|secret\d+|family|god|teainv|halloween|visited|phone-read2?|thundermet|timemet|catspots|gatetold|spidertaken|spiderdoor|dragonburns|fishgift|farm|ccjet|myplanet|myfloor|folk|folkf|houses)$/;
 const MPW = { applying: false };
 const MPW_OBJ = { 'modly-quest1': () => typeof QUEST !== 'undefined' ? QUEST : null, 'modly-quest2': () => typeof Q2 !== 'undefined' ? Q2 : null, 'modly-quest3': () => typeof Q3 !== 'undefined' ? Q3 : null, 'modly-quest4': () => typeof Q4 !== 'undefined' ? Q4 : null, 'modly-quest5': () => typeof Q5 !== 'undefined' ? Q5 : null, 'modly-quest6': () => typeof Q6 !== 'undefined' ? Q6 : null, 'modly-quest7': () => typeof Q7 !== 'undefined' ? Q7 : null, 'modly-quest10': () => typeof Q10 !== 'undefined' ? Q10 : null, 'modly-quest11': () => typeof Q11 !== 'undefined' ? Q11 : null, 'modly-quest12': () => typeof Q12 !== 'undefined' ? Q12 : null, 'modly-quest13': () => typeof Q13 !== 'undefined' ? Q13 : null, 'modly-quest14': () => typeof Q14 !== 'undefined' ? Q14 : null, 'modly-quest16': () => typeof Q16 !== 'undefined' ? Q16 : null, 'modly-quest17': () => typeof Q17 !== 'undefined' ? Q17 : null, 'modly-quest18': () => typeof Q18 !== 'undefined' ? Q18 : null, 'modly-quest19': () => typeof Q19 !== 'undefined' ? Q19 : null, 'modly-quest20': () => typeof Q20 !== 'undefined' ? Q20 : null, 'modly-quest21': () => typeof Q21 !== 'undefined' ? Q21 : null, 'modly-quest22': () => typeof Q22 !== 'undefined' ? Q22 : null, 'modly-quest23': () => typeof Q23 !== 'undefined' ? Q23 : null, 'modly-quest24': () => typeof Q24 !== 'undefined' ? Q24 : null, 'modly-quest25': () => typeof Q25 !== 'undefined' ? Q25 : null, 'modly-quest26': () => typeof Q26 !== 'undefined' ? Q26 : null, 'modly-quest27': () => typeof Q27 !== 'undefined' ? Q27 : null, 'modly-quest28': () => typeof Q28 !== 'undefined' ? Q28 : null, 'modly-quest29': () => typeof Q29 !== 'undefined' ? Q29 : null, 'modly-secret9': () => typeof S9 !== 'undefined' ? S9 : null, 'modly-secret15': () => typeof S15 !== 'undefined' ? S15 : null, 'modly-family': () => typeof FAM !== 'undefined' ? FAM : null, 'modly-god': () => typeof GOD !== 'undefined' ? GOD : null, 'modly-folk': () => typeof FOLK !== 'undefined' ? FOLK : null, 'modly-catspots': () => typeof catSpots !== 'undefined' ? catSpots : null };
 function mpwSnap() { const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (MPW_RE.test(k)) o[k] = localStorage.getItem(k); } return o; }
@@ -18547,5 +18547,82 @@ if (window.MODLY_PUBLIC) {
   { const _h = mpHost; mpHost = (...a) => { gcEvent('mp-room', 'Multiplayer kambarys / room'); return _h(...a); }; }
   { const _j = mpJoin; mpJoin = (...a) => { gcEvent('mp-join', 'Multiplayer prisijungimas / join'); return _j(...a); }; }
 }
+
+// ================= MULTIPLAYER 5: build ONE "My planet" together 👑 =================
+// Everyone in the room builds the same planet (every block is sent to the others at once). The planet is as many
+// times wider as there are players (and stays that wide). Every player makes THEIR OWN people – they all live there.
+const MP5 = { applying: false };
+const mp5L = (lt, en) => EN ? en : lt;
+const mp5N = () => (typeof MP !== 'undefined' && MP.on) ? Math.max(1, Math.min(4, MP.n || 1)) : 1;
+try { const s = JSON.parse(localStorage.getItem('modly-myplanet') || 'null'); MN.wide = (s && s.w) || 1; } catch (_) { MN.wide = 1; }
+// the save remembers how wide the planet is
+mnSave = () => { try { localStorage.setItem('modly-myplanet', JSON.stringify({ sky: MN.sky, w: MN.wide || 1, b: [...MN.cells.values()].map(g => g.userData.cell) })); } catch (_) { } };
+// before building, read the newest saved planet (a friend may have changed it)
+{ const _b = buildMine; buildMine = (...a) => {
+    if (!MN.built) { try { const s = JSON.parse(localStorage.getItem('modly-myplanet') || 'null'); if (s) { MN.saved = s.b || []; MN.sky = s.sky || 0; MN.wide = Math.max(MN.wide || 1, s.w || 1); } } catch (_) { } }
+    const r = _b(...a); mp5Size(true); return r; }; }
+// ---------- the size ----------
+function mp5Size(force) {
+  if (!MN.ground) return; const w = MN.wide || 1; if (!force && MN.gw === w) return; MN.gw = w;
+  const g = MN.ground.parent; if (!g) return;
+  for (const c of g.children) { if (!c.userData.s0) c.userData.s0 = c.scale.clone(); const s0 = c.userData.s0;
+    if (c === MN.ground || (c.geometry === G.box && s0.x > 70) || c.geometry === G.cone) c.scale.set(c === MN.ground ? 80 * w + 1 : s0.x * w, s0.y, c === MN.ground ? 80 * w + 1 : s0.z * w); }
+}
+fx.push(() => {
+  const want = Math.max(MN.wide || 1, mp5N());
+  if (want !== MN.wide) { MN.wide = want; MN.saveT = 1; if (mode === 'mine') { toast(mp5L(`🌍 Planeta ${want}× platesnė!`, `🌍 The planet is ${want}× wider!`), mp5L(`Žaidžiate ${mp5N()} – statykite kartu`, `${mp5N()} of you are playing – build together`), '#ffe14d'); FK.dirty = true; } }
+  mp5Size(false); return true;
+});
+// ---------- every block goes to the others ----------
+const mp5Send = d => { if (MP.on && !MP5.applying) mpSend(Object.assign({ t: 'mn' }, d)); };
+{ const _p = mnPut; mnPut = (x, y, z, t, quiet) => { const ok = _p(x, y, z, t, quiet); if (ok && !quiet) mp5Send({ a: 'p', c: [x, y, z, t] }); return ok; }; }
+{ const _d = mnDel; mnDel = g => { const c = g.userData.cell; _d(g); mp5Send({ a: 'd', c }); }; }
+{ const _s = mnSky; mnSky = i => { const ch = MN.sky !== i; _s(i); if (ch) mp5Send({ a: 's', i }); }; }
+function mp5Apply(d) {
+  if (!MN.built) return; MP5.applying = true;
+  try {
+    if (d.a === 'p' && d.c) { if (mnPut(d.c[0], d.c[1], d.c[2], d.c[3], true)) { MN.saveT = 1; FK.dirty = FK.dirty || d.c[1] === 0; } }
+    else if (d.a === 'd' && d.c) { const g = MN.cells.get(mnKey(d.c[0], d.c[1], d.c[2])); if (g) mnDel(g); }
+    else if (d.a === 's') mnSky(d.i | 0);
+  } catch (e) { console.error(e); }
+  MP5.applying = false;
+}
+{ const _o = mpOnData; mpOnData = (d, c) => {
+    if (d && d.t === 'mn') { if (MP.host) MP.conns.forEach(x => { if (x !== c && x.open) x.send(d); }); mp5Apply(d); return; }
+    return _o(d, c); }; }
+// ---------- every player makes their own people ----------
+const mp5Map = () => { try { return JSON.parse(localStorage.getItem('modly-folkf') || '{}') || {}; } catch (_) { return {}; } };
+function mp5Fresh() { return Object.assign({}, FOLK_DEF, { outfits: [], made: false, v: 2, anames: [], knames: [], aover: [], kover: [], hair: 'none', hairColor: '#5a3a1a', sex: 'm' }); }
+function mp5Swap(data) { const old = Object.assign({}, FOLK); for (const k of Object.keys(FOLK)) delete FOLK[k]; Object.assign(FOLK, data); mp5Fix(); return old; }
+function mp5Fix() { for (const k of ['outfits', 'anames', 'knames', 'aover', 'kover']) if (!Array.isArray(FOLK[k])) FOLK[k] = []; if (FOLK.hair == null) FOLK.hair = 'none'; if (FOLK.hairColor == null) FOLK.hairColor = '#5a3a1a'; if (FOLK.sex == null) FOLK.sex = 'm'; }
+const mp5Me = () => String(MP.name || (typeof mpMyName === 'function' ? mpMyName() : '') || 'friend').slice(0, 16);
+// a friend saves their people in their own place (not over the room creator's people)
+{ const _s = fkSave; fkSave = () => { if (FK.mpEdit) { const m = mp5Map(); m[FK.mpEdit.me] = JSON.parse(JSON.stringify(FOLK)); try { localStorage.setItem('modly-folkf', JSON.stringify(m)); } catch (_) { } return; } return _s(); }; }
+{ const _o = fkOpen; fkOpen = (...a) => {
+    if (!FK.open && !FK.mpEdit && MP.on && !MP.host && mode === 'mine') { const me = mp5Me(); const mine = mp5Map()[me] || mp5Fresh(); FK.mpEdit = { me, host: mp5Swap(mine) }; FK.sel = 0;
+      setTimeout(() => toast(mp5L('👪 TAVO gyventojai', '👪 YOUR people'), mp5L('Ką čia sukursi, gyvens planetoje kartu su draugo gyventojais', "Who you make here will live on the planet with your friend's people"), '#9aff7a'), 300); }
+    return _o(...a); }; }
+{ const _c = fkClose; fkClose = (...a) => { const r = _c(...a); if (FK.mpEdit) { const h = FK.mpEdit.host; FK.mpEdit = null; mp5Swap(h); FK.dirty = true; if (fkDesk) { mineScene.remove(fkDesk); fkDesk = null; fkBuildDesk(); } } return r; }; }
+// everybody's people walk on the planet
+{ const _p = fkPopulate; fkPopulate = (...a) => {
+    const m = mp5Map(); if (FK.mpEdit) m[FK.mpEdit.me] = Object.assign({}, FOLK);
+    const friends = Object.keys(m).filter(k => m[k] && m[k].made);
+    if (!friends.length && !FK.mpEdit) return _p(...a);
+    FK.people.forEach(p => { if (p.g.parent) p.g.parent.remove(p.g); }); FK.people = [];
+    const cur = Object.assign({}, FOLK), sets = [['', FK.mpEdit ? FK.mpEdit.host : cur], ...friends.map(k => [k, m[k]])], all = [];
+    for (const [who, data] of sets) { mp5Swap(data); FK.people = []; try { _p(...a); } catch (e) { console.error(e); } FK.people.forEach(p => { p.owner = who; }); all.push(...FK.people); }
+    mp5Swap(cur); FK.people = all; FK.dirty = false;
+  }; }
+// friends' families can get houses too
+{ const _h = hsFamilies; hsFamilies = () => { const r = _h(), m = mp5Map(); for (const k in m) { if (!m[k] || !m[k].made) continue; const cur = mp5Swap(m[k]); try { const f = _h(); for (const s in f) if (!r[s]) r[s] = f[s]; } catch (_) { } mp5Swap(cur); } return r; }; }
+// what comes from the others: refresh the people, the floor and the size
+{ const _a = mpwApply; mpwApply = (k, v) => {
+    if (k === 'modly-folk' && FK.mpEdit) { const cur = mp5Swap(FK.mpEdit.host); _a(k, v); FK.mpEdit.host = mp5Swap(cur); } else _a(k, v);
+    try {
+      if (/^modly-(folk|folkf|houses)$/.test(k)) FK.dirty = true;
+      if (k === 'modly-myfloor' && v != null && MN.ground) mnFloorApply(+v);
+      if (k === 'modly-myplanet' && v) { const s = JSON.parse(v); if ((s.w || 1) > (MN.wide || 1)) MN.wide = s.w; }
+    } catch (e) { console.error(e); }
+  }; }
 </script>
 </html>
