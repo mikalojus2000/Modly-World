@@ -18002,6 +18002,7 @@ addEventListener('keydown', e => {
 }, true);
 setTimeout(() => { const go = $('go'); if (go && !$('mpGo')) { const b = document.createElement('button'); b.className = 'btn'; b.id = 'mpGo'; b.type = 'button'; b.textContent = '🌐 Multiplayer'; go.parentNode.appendChild(b); b.onclick = mpOpen; } }, 0);
 
+
 // ================= GIFTS 🎁 from the game's creator =================
 // Each entry gives something to the account (world name) `to` – once. The account gets it when it logs in and starts.
 // Fields: money (number), cars / skins / pets / backs (arrays of ids, or 'all'), note (text shown with the gift).
@@ -18014,6 +18015,7 @@ const GIFTS = [
   { id: 'pppp-1', to: 'pppp', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, note: 'VISKAS, KAS ĮMANOMA! Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'EVERYTHING POSSIBLE! All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
   { id: 'vytisra1-1', to: 'vytisra1', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, note: 'VISKAS, KAS ĮMANOMA! Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'EVERYTHING POSSIBLE! All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
   { id: 'wwww-1', to: 'wwww', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, note: 'VISKAS, KAS ĮMANOMA! Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'EVERYTHING POSSIBLE! All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
+  { id: 'vytisra2-1', to: 'vytisra2', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, note: 'VISKAS, KAS ĮMANOMA! Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'EVERYTHING POSSIBLE! All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
   // { id: 'g1', to: 'vardas', money: 10000, cars: ['rocket'], skins: ['king'], pets: ['unicorn'], backs: ['wings'], note: 'Ačiū, kad žaidi!' },
 ];
 function giftApply(g) {
