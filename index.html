@@ -18624,5 +18624,62 @@ const mp5Me = () => String(MP.name || (typeof mpMyName === 'function' ? mpMyName
       if (k === 'modly-myplanet' && v) { const s = JSON.parse(v); if ((s.w || 1) > (MN.wide || 1)) MN.wide = s.w; }
     } catch (e) { console.error(e); }
   }; }
+
+// ================= Call your car ANYWHERE 🚗 (every world, not only the big planet) =================
+// F – the garage opens in every world. In the other worlds the car comes next to you; R – get in / get out.
+// You drive it like walking, but much faster, and it comes with you through portals and doors.
+const FC = { mesh: null, id: null, ride: false, last: null, spin: 0 };
+const fcL = (lt, en) => EN ? en : lt;
+const fcOk = () => started && mode !== 'planet' && mode !== 'attract' && !cinema;
+function fcRemove() { if (FC.mesh && FC.mesh.parent) FC.mesh.parent.remove(FC.mesh); FC.mesh = null; FC.ride = false; FC.id = null; }
+function fcSummon(id) {
+  const spec = CARS.find(c => c.id === id); if (!spec) return;
+  const sc = player.mesh.parent; if (!sc) return;
+  fcRemove(); const wheels = []; const m = spec.make(wheels); m.userData.wheels = wheels; FC.mesh = m; FC.id = id; FC.spec = spec;
+  const up = player.up.clone().normalize(), f = player.fwd.clone().addScaledVector(up, -player.fwd.dot(up)).normalize();
+  m.position.copy(player.pos).addScaledVector(f, (spec.len || 3) / 2 + 2); orient(m, up, new V3().crossVectors(up, f)); sc.add(m);
+  try { poof(m.position.clone(), 0xffffff); } catch (_) { } try { sfx.poof(); sfx.horn(camera.position); } catch (_) { }
+  toast(fcL(`${spec.name} atvažiavo!`, `${spec.name} has arrived!`), fcL('R – sėsti', 'R – get in'), '#ffd23a');
+}
+function fcIn() {
+  if (!FC.mesh) return; FC.mesh.parent && FC.mesh.parent.remove(FC.mesh);
+  const st = FC.spec.seat || [0, 0, 0]; FC.mesh.position.set(-st[0], 0, -st[2]); FC.mesh.quaternion.identity(); player.mesh.add(FC.mesh); FC.ride = true; FC.last = player.pos.clone();
+  try { sfx.horn(camera.position); } catch (_) { }
+  toast(fcL(`Vairuoji: ${FC.spec.name} 🚗`, `Driving: ${FC.spec.name} 🚗`), fcL('W – važiuoti · Shift – greičiau · R – išlipti. Mašina važiuoja su tavimi į visus pasaulius!', 'W – drive · Shift – faster · R – get out. The car goes with you to every world!'), '#ffd23a');
+}
+function fcOut() {
+  if (!FC.mesh) return; const sc = player.mesh.parent; player.mesh.remove(FC.mesh); FC.ride = false;
+  if (!sc) { fcRemove(); return; }
+  const up = player.up.clone().normalize(), f = player.fwd.clone().addScaledVector(up, -player.fwd.dot(up)).normalize(), rt = new V3().crossVectors(f, up).normalize();
+  FC.mesh.position.copy(player.pos); orient(FC.mesh, up, f); sc.add(FC.mesh); player.pos.addScaledVector(rt, (FC.spec.wid || 1.8) + 0.6);
+  toast(fcL('Išlipai', 'You got out'), fcL('R šalia mašinos – vėl sėsti', 'R next to the car – get in again'), '#ffd23a');
+}
+// F: the garage everywhere
+{ const _s = onSpawnCar; onSpawnCar = (...a) => { if (fcOk() && !card) { openGarage(); return; } return _s(...a); }; }
+{ const _c = callVehicle; callVehicle = id => {
+    if (!fcOk()) { if (FC.ride || FC.mesh) fcRemove(); return _c(id); }
+    closeGarage(true);
+    if (id === 'pig') { toast(fcL('Kiaulė gyvena tik didžiojoje planetoje 🐷', 'The pig only lives on the big planet 🐷'), fcL('Čia išsirink mašiną', 'Choose a car here'), '#ffd23a'); return; }
+    const wasIn = FC.ride; fcSummon(id); if (wasIn) fcIn(); }; }
+// R: get in / out
+{ const _o = onCar; onCar = (...a) => {
+    if (fcOk() && FC.mesh) { if (FC.ride) fcOut(); else { const p = new V3(); FC.mesh.getWorldPosition(p); if (p.distanceTo(player.pos) < (FC.spec.len || 3) / 2 + 3) fcIn(); else toast(fcL('Mašina per toli', 'The car is too far'), fcL('Prieik arčiau arba spausk F ir iškviesk ją čia', 'Walk closer or press F and call it here'), '#ffd23a'); } return; }
+    return _o(...a); }; }
+// My planet: F changes the floor there, so the car comes with J
+addEventListener('keydown', e => { if (e.code === 'KeyJ' && !e.repeat && started && mode === 'mine' && !card) { e.preventDefault(); openGarage(); } }, true);
+// every frame: drive faster, spin the wheels, show the help
+fx.push(dt => {
+  if (FC.ride && !fcOk()) { fcRemove(); }   // back on the big planet: the real cars work there
+  if (FC.mesh && !FC.ride && FC.mesh.parent && player.mesh.parent && FC.mesh.parent !== player.mesh.parent && FC.mesh.parent !== player.mesh) { FC.mesh.parent.remove(FC.mesh); FC.mesh = null; }   // left the parked car in another world
+  if (!FC.ride) { FC.last = null; return true; }
+  if (FC.mesh.parent !== player.mesh) player.mesh.add(FC.mesh);
+  const up = player.up.clone().normalize(); let sp = 0;
+  if (FC.last) { const d = player.pos.clone().sub(FC.last); d.addScaledVector(up, -d.dot(up)); const l = d.length();
+    if (l > 1e-4 && l < 1 && !card && !transitioning) { const extra = Math.min(l * 2, 0.6); player.pos.addScaledVector(d.normalize(), extra); sp = (l + extra) / Math.max(dt, 1e-3); } }
+  FC.last = player.pos.clone();
+  FC.spin += sp * dt / 0.4; for (const w of FC.mesh.userData.wheels || []) { if (w && w.rotation) w.rotation.x = FC.spin; }
+  if (!card && typeof setPrompt === 'function' && Math.random() < 0.02 && sp < 0.1) setPrompt(fcL('<kbd>R</kbd> išlipti iš mašinos', '<kbd>R</kbd> get out of the car'));
+  return true;
+});
 </script>
 </html>
