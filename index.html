@@ -298,6 +298,9 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const EN = (() => { try { return localStorage.getItem('modly-lang') !== 'lt'; } catch (_) { return true; } })();
+// multiplayer: if this browser still holds a friend's world (the tab was closed in a room), bring back your own world first
+try { const bk = localStorage.getItem('modly-mpbackup'); if (bk && !sessionStorage.getItem('modly-mpworld')) { const re = /^modly-(quest(?!8$)\d+|secret\d+|family|god|teainv|halloween|visited|phone-read2?|thundermet|timemet|catspots|gatetold|spidertaken|spiderdoor|dragonburns|fishgift|farm|ccjet|myplanet|myfloor|folk|houses)$/;
+  const del = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (re.test(k)) del.push(k); } del.forEach(k => localStorage.removeItem(k)); const o = JSON.parse(bk); for (const k in o) localStorage.setItem(k, o[k]); localStorage.removeItem('modly-mpbackup'); } } catch (_) { }
 // On "My planet" the powers (1 fireball, 2 teleport, 3 lightning, 4 sword, 5 portal) do not work: the number keys only choose blocks.
 // (this listener is the very first one, so it runs before every power key listener)
 addEventListener('keydown', e => {
@@ -17844,7 +17847,7 @@ const MP = { on: false, host: false, peer: null, conns: [], conn: null, code: ''
 const MP_COLS = ['#4ad84a', '#ff3a3a', '#ffd23a', '#3a7aff'];   // green, red, yellow, blue – one colour for each player
 const MP_CNAME = [['žalias', 'green', '🟢'], ['raudonas', 'red', '🔴'], ['geltonas', 'yellow', '🟡'], ['mėlynas', 'blue', '🔵']];
 MP.slot = 0; MP.slotOf = {};
-const mpHpMul = () => 1 + 0.75 * (MP.n - 1), mpDmgMul = () => 1 + 0.25 * (MP.n - 1), mpRateMul = () => 1 + 0.2 * (MP.n - 1);
+const mpHpMul = () => [1, 2, 2.5, 3][Math.min(4, MP.n) - 1] || 1, mpDmgMul = () => [1, 1.5, 1.75, 2][Math.min(4, MP.n) - 1] || 1, mpRateMul = () => [1, 1.3, 1.45, 1.6][Math.min(4, MP.n) - 1] || 1;   // 2 players: twice as hard
 function mpCfg() { const c = { debug: 0 }; try { const s = JSON.parse(localStorage.getItem('modly-mpserver') || 'null'); if (s) Object.assign(c, s); } catch (_) { } return c; }
 function mpLoadLib() {
   if (window.Peer) return Promise.resolve(); if (MP.lib) return MP.lib;
@@ -17859,13 +17862,13 @@ async function mpHost() {
   try { await mpLoadLib(); } catch (_) { return mpMsg(mpL('Nepavyko įkelti multiplayer – patikrink internetą', 'Could not load multiplayer – check the internet')); }
   mpLeave(true); MP.name = mpMyName(); const code = mpCode(); mpMsg(mpL('Kuriamas kambarys…', 'Creating a room…'), '#ffe14d');
   const p = MP.peer = new Peer(mpPid(code), mpCfg());
-  p.on('open', id => { MP.on = true; MP.host = true; MP.code = code; MP.myId = id; MP.n = 1; mpPanel(); toast(mpL('🌐 Kambarys sukurtas!', '🌐 Room created!'), mpL(`Kodas: ${code} – pasakyk jį draugams (iki 3)`, `Code: ${code} – tell it to your friends (up to 3)`), '#4ab0ff'); });
+  p.on('open', id => { MP.retry = 0; MP.on = true; MP.host = true; MP.code = code; MP.myId = id; MP.n = 1; mpPanel(); toast(mpL('🌐 Kambarys sukurtas!', '🌐 Room created!'), mpL(`Kodas: ${code} – pasakyk jį draugams (iki 3)`, `Code: ${code} – tell it to your friends (up to 3)`), '#4ab0ff'); });
   p.on('connection', c => {
     c.on('open', () => { if (MP.conns.length >= 3) { c.send({ t: 'full' }); setTimeout(() => c.close(), 300); return; } MP.conns.push(c); const used = new Set(Object.values(MP.slotOf)); MP.slotOf[c.peer] = [1, 2, 3].find(x => !used.has(x)) || 1; c.send({ t: 'hi', code: MP.code }); });
     c.on('data', d => mpOnData(d, c));
     c.on('close', () => { MP.conns = MP.conns.filter(x => x !== c); delete MP.slotOf[c.peer]; const r = MP.peers.get(c.peer); if (r) { mpDrop(c.peer); toast('🌐 ' + mpL(`${r.name} išėjo`, `${r.name} left`), '', '#4ab0ff'); } mpPanel(); });
   });
-  p.on('error', e => { if (String(e.type) === 'unavailable-id') { mpLeave(true); mpHost(); return; } mpMsg(mpL('Klaida: ', 'Error: ') + (e.type || e.message)); });
+  p.on('error', e => { if (String(e.type) === 'unavailable-id') { MP.retry = (MP.retry || 0) + 1; if (MP.retry > 6) { try { localStorage.removeItem('modly-mproom'); } catch (_) { } MP.retry = 0; } mpLeave(true); mpMsg(mpL('Tavo pasaulio kambarys dar užimtas – bandau dar kartą…', 'Your world room is still busy – trying again…'), '#ffe14d'); setTimeout(mpHost, 3000); return; } mpMsg(mpL('Klaida: ', 'Error: ') + (e.type || e.message)); });
 }
 async function mpJoin(code) {
   code = (code || '').trim().toUpperCase(); if (!/^[A-Z]{4}$/.test(code)) return mpMsg(mpL('Kodas – 4 raidės', 'The code is 4 letters'));
@@ -18438,6 +18441,68 @@ fx.push(dt => { if (!(mp3On() && !MP.host)) return true; MP3.ht = (MP3.ht || 0) 
 { const _l = mpLeave; mpLeave = (...a) => { const wasGuest = MP.on && !MP.host; const r = _l(...a); if (wasGuest) for (const b of bodies) if (b.held === 'net') { b.held = null; b.netHolder = ''; } MP3.synced = {}; MP3.holdBy = {}; return r; }; }
 // a guest who comes back to the planet asks for everything again
 { let lastMode = ''; fx.push(() => { if (MP.on && !MP.host && mode === 'planet' && lastMode !== 'planet') mpSend({ t: 'bsync' }); lastMode = mode; return true; }); }
+
+// ================= MULTIPLAYER 4: one shared WORLD – everybody does the same missions, and the world is saved =================
+// The room creator's game is the world. Friends who join play in that world (same missions, same progress); their own
+// world is kept safe and comes back when they leave. Every change of a mission is sent to all players. The room code
+// stays the same, so you can come back to the same world later.
+const MPW_RE = /^modly-(quest(?!8$)\d+|secret\d+|family|god|teainv|halloween|visited|phone-read2?|thundermet|timemet|catspots|gatetold|spidertaken|spiderdoor|dragonburns|fishgift|farm|ccjet|myplanet|myfloor|folk|houses)$/;
+const MPW = { applying: false };
+const MPW_OBJ = { 'modly-quest1': () => typeof QUEST !== 'undefined' ? QUEST : null, 'modly-quest2': () => typeof Q2 !== 'undefined' ? Q2 : null, 'modly-quest3': () => typeof Q3 !== 'undefined' ? Q3 : null, 'modly-quest4': () => typeof Q4 !== 'undefined' ? Q4 : null, 'modly-quest5': () => typeof Q5 !== 'undefined' ? Q5 : null, 'modly-quest6': () => typeof Q6 !== 'undefined' ? Q6 : null, 'modly-quest7': () => typeof Q7 !== 'undefined' ? Q7 : null, 'modly-quest10': () => typeof Q10 !== 'undefined' ? Q10 : null, 'modly-quest11': () => typeof Q11 !== 'undefined' ? Q11 : null, 'modly-quest12': () => typeof Q12 !== 'undefined' ? Q12 : null, 'modly-quest13': () => typeof Q13 !== 'undefined' ? Q13 : null, 'modly-quest14': () => typeof Q14 !== 'undefined' ? Q14 : null, 'modly-quest16': () => typeof Q16 !== 'undefined' ? Q16 : null, 'modly-quest17': () => typeof Q17 !== 'undefined' ? Q17 : null, 'modly-quest18': () => typeof Q18 !== 'undefined' ? Q18 : null, 'modly-quest19': () => typeof Q19 !== 'undefined' ? Q19 : null, 'modly-quest20': () => typeof Q20 !== 'undefined' ? Q20 : null, 'modly-quest21': () => typeof Q21 !== 'undefined' ? Q21 : null, 'modly-quest22': () => typeof Q22 !== 'undefined' ? Q22 : null, 'modly-quest23': () => typeof Q23 !== 'undefined' ? Q23 : null, 'modly-quest24': () => typeof Q24 !== 'undefined' ? Q24 : null, 'modly-quest25': () => typeof Q25 !== 'undefined' ? Q25 : null, 'modly-quest26': () => typeof Q26 !== 'undefined' ? Q26 : null, 'modly-quest27': () => typeof Q27 !== 'undefined' ? Q27 : null, 'modly-quest28': () => typeof Q28 !== 'undefined' ? Q28 : null, 'modly-quest29': () => typeof Q29 !== 'undefined' ? Q29 : null, 'modly-secret9': () => typeof S9 !== 'undefined' ? S9 : null, 'modly-secret15': () => typeof S15 !== 'undefined' ? S15 : null, 'modly-family': () => typeof FAM !== 'undefined' ? FAM : null, 'modly-god': () => typeof GOD !== 'undefined' ? GOD : null, 'modly-folk': () => typeof FOLK !== 'undefined' ? FOLK : null, 'modly-catspots': () => typeof catSpots !== 'undefined' ? catSpots : null };
+function mpwSnap() { const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (MPW_RE.test(k)) o[k] = localStorage.getItem(k); } return o; }
+function mpwApply(k, v) {
+  if (!MPW_RE.test(k)) return; MPW.applying = true;
+  try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v);
+    const f = MPW_OBJ[k], o = f && f(); if (o && v != null) { const n = JSON.parse(v); if (k === 'modly-quest21' && n.dug && typeof DG !== 'undefined') { DG.dug = new Set(n.dug); delete n.dug; } Object.assign(o, n); }
+    if (k === 'modly-visited' && v && typeof visited !== 'undefined') JSON.parse(v).forEach(x => visited.add(x));
+    if (k === 'modly-halloween' && v && typeof HW !== 'undefined') Object.assign(HW, JSON.parse(v));
+    if (k === 'modly-quest8' && v && typeof Q8 !== 'undefined') { const n = JSON.parse(v); Q8.stage = n.stage; }
+  } catch (e) { console.error(e); }
+  MPW.applying = false;
+}
+// the same room code every time = the same world
+{ const _c = mpCode; mpCode = () => { let c = null; try { c = localStorage.getItem('modly-mproom'); } catch (_) { } if (!/^[A-Z]{4}$/.test(c || '')) { c = _c(); try { localStorage.setItem('modly-mproom', c); } catch (_) { } } return c; }; }
+// every saved change of a mission goes to the others
+{ const _set = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) {
+    let old = null; const watch = this === window.localStorage && typeof MP !== 'undefined' && MP.on && !MPW.applying && MPW_RE.test(k);
+    if (watch) { try { old = this.getItem(k); } catch (_) { } }
+    const r = _set.call(this, k, v); if (watch && old !== String(v)) mpSend({ t: 'wk', k, v: String(v) }); return r; }; }
+{ const _o = mpOnData; mpOnData = (d, c) => {
+    if (d && d.t === 'wk') { mpwApply(d.k, d.v); if (MP.host) MP.conns.forEach(x => { if (x !== c && x.open) x.send(d); }); return; }
+    if (d && d.t === 'wreq' && MP.host) { c.send({ t: 'world', code: MP.code, keys: mpwSnap() }); return; }
+    if (d && d.t === 'world' && !MP.host) { mpwEnter(d); return; }
+    if (d && d.t === 'hi' && !MP.host) { try { c.send({ t: 'wreq' }); } catch (_) { } }
+    return _o(d, c); }; }
+function mpwEnter(d) {
+  let inWorld = null; try { inWorld = sessionStorage.getItem('modly-mpworld'); } catch (_) { }
+  if (inWorld === d.code) { for (const k in d.keys) mpwApply(k, d.keys[k]); toast(mpL('🌍 Tu draugo pasaulyje', "🌍 You are in your friend's world"), mpL('Jūs darote tas pačias misijas kartu!', 'You do the same missions together!'), '#4ab0ff'); return; }
+  // first time: keep my own world safe, take the friend's world and start again inside it
+  MPW.applying = true;
+  try { if (!localStorage.getItem('modly-mpbackup')) localStorage.setItem('modly-mpbackup', JSON.stringify(mpwSnap()));
+    Object.keys(mpwSnap()).forEach(k => localStorage.removeItem(k)); for (const k in d.keys) localStorage.setItem(k, d.keys[k]);
+    localStorage.removeItem('modly-pos'); sessionStorage.setItem('modly-mpworld', d.code); sessionStorage.setItem('modly-mprejoin', JSON.stringify({ code: d.code, name: MP.name }));
+    if (typeof AC !== 'undefined' && AC.active) sessionStorage.setItem('modly-skiplogin', AC.active); } catch (e) { console.error(e); }
+  MPW.applying = false;
+  toast(mpL('🌍 Keliauji į draugo pasaulį…', "🌍 Going to your friend's world…"), mpL('Jūsų misijos bus bendros. Tavo pasaulis išsaugotas.', 'Your missions will be shared. Your own world is kept safe.'), '#4ab0ff');
+  started = false; setTimeout(() => { try { location.reload(); } catch (_) { } }, 900);
+}
+// leaving the room – a guest gets their own world back
+function mpwRestore() {
+  let inWorld = null; try { inWorld = sessionStorage.getItem('modly-mpworld'); } catch (_) { } if (!inWorld) return false;
+  MPW.applying = true;
+  try { const bk = JSON.parse(localStorage.getItem('modly-mpbackup') || '{}'); Object.keys(mpwSnap()).forEach(k => localStorage.removeItem(k)); for (const k in bk) localStorage.setItem(k, bk[k]); localStorage.removeItem('modly-mpbackup'); localStorage.removeItem('modly-pos');
+    sessionStorage.removeItem('modly-mpworld'); sessionStorage.removeItem('modly-mprejoin'); if (typeof AC !== 'undefined' && AC.active) sessionStorage.setItem('modly-skiplogin', AC.active); } catch (e) { console.error(e); }
+  MPW.applying = false; return true;
+}
+{ const _l = mpLeave; mpLeave = (quiet) => { const guest = MP.on && !MP.host; const r = _l(quiet);
+    if (guest && !MPW.leaving) { MPW.leaving = true; if (mpwRestore()) { toast(mpL('🏠 Grįžti į savo pasaulį…', '🏠 Going back to your own world…'), '', '#4ab0ff'); started = false; setTimeout(() => { try { location.reload(); } catch (_) { } }, 900); } MPW.leaving = false; }
+    return r; }; }
+// after the reload: start by itself and join the room again
+setTimeout(() => { let rj = null; try { rj = JSON.parse(sessionStorage.getItem('modly-mprejoin') || 'null'); } catch (_) { } if (!rj) return;
+  const tick = setInterval(() => { const go = $('go'); if (!go || go.disabled) return; const ac = document.getElementById('acWin'); if (ac && !ac.hidden) return;
+    clearInterval(tick); try { sessionStorage.removeItem('modly-mprejoin'); } catch (_) { } if (!started) go.click(); MP.name = rj.name || MP.name; setTimeout(() => mpJoin(rj.code), 800); }, 400); }, 0);
+// the window shows that the world is kept
+{ const _p = mpPanel; mpPanel = (...a) => { const r = _p(...a); try { if (MP.el && !MP.el.hidden && MP.on) { const box = MP.el.querySelector('[data-leave]'); if (box && !MP.el.querySelector('[data-wnote]')) { const n = document.createElement('div'); n.dataset.wnote = '1'; n.style.cssText = 'font-size:13px;color:#9aff7a;margin-top:6px'; n.textContent = MP.host ? mpL('🌍 Tai TAVO pasaulis: visų misijos bendros ir išsaugomos. Kodas visada tas pats – draugai gali grįžti į tą patį pasaulį.', '🌍 This is YOUR world: everybody shares the missions and they are saved. The code is always the same – friends can come back to the same world.') : mpL('🌍 Tu draugo pasaulyje: misijos bendros. Išėjus grįši į savo pasaulį.', "🌍 You are in your friend's world: the missions are shared. When you leave, you go back to your own world."); box.before(n); } } } catch (_) { } return r; }; }
 
 // ================= GoatCounter statistics (only in the public GitHub game) =================
 // https://mikalojus2000.goatcounter.com – page views + events: login, new account, game start, multiplayer room / join
