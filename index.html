@@ -3948,6 +3948,9 @@ function runCommand(txt) {
   if (cmd === 'saule' || cmd === 'saulė' || cmd === 'sun') { giveFishSkin(); hideCard(); enterSun(); return; }
   toast((EN?"Unknown command":'Nežinoma komanda'), (EN?"Try: pinigai · pinigai 5000 · kuprine · sparnai · viskas · slapta · urviniai · ateitis · kates · demonas · kosmosas · saule · perejau · ukis · marsas · voras · pilis · kepure · katinas · vaiduokliai · laikas · lapeliai (lapeliai 5) · telefonas (telefonas 9) · griaustinis · kasimas (kasimas 99) · vejas (vejas 2) · sukimas (sukimas 190) · zvaigzde (zvaigzde 2) · ugnis (ugnis 1) · teleportas (teleportas 1) · slyva · leidimas · zona · megintuvelis (megintuvelis 1) · ankstis (ankstis 38) · portalai (portalai 1) · lektuvas (lektuvas 1/2/3) · kardas (kardas 1/2) · siksnosparnis (siksnosparnis 1/2)":'Bandyk: pinigai · pinigai 5000 · kuprine · sparnai · viskas · slapta · urviniai · ateitis · kates · demonas · kosmosas · saule · perejau · ukis · marsas · voras · pilis · kepure · katinas · vaiduokliai · laikas · lapeliai (lapeliai 5) · telefonas (telefonas 9) · griaustinis · kasimas (kasimas 99) · vejas (vejas 2) · sukimas (sukimas 190) · zvaigzde (zvaigzde 2) · ugnis (ugnis 1) · teleportas (teleportas 1) · slyva · leidimas · zona · megintuvelis (megintuvelis 1) · ankstis (ankstis 38) · portalai (portalai 1) · lektuvas (lektuvas 1/2/3) · kardas (kardas 1/2) · siksnosparnis (siksnosparnis 1/2)'), '#ff6b6b');
 }
+// multiplayer: missions need more things (2 players ×2, 3 ×2.5, 4 ×3)
+function mpGoal(b) { let m = 1; try { m = MP.on ? mpHpMul() : 1; } catch (_) { } return Math.round(b * m); }
+const CHICK_MAX = 21;
 // ================= God's first command: "Save the chicks" =================
 const QUEST = { stage: 'none', delivered: [] };     // stage: none | active | done
 try { const q = JSON.parse(localStorage.getItem('modly-quest1') || 'null'); if (q && q.stage) { QUEST.stage = q.stage; QUEST.delivered = q.delivered || []; } } catch (_) { }
@@ -3960,7 +3963,7 @@ const COMMAND_LINES = [
   (EN?"Don't worry – they're easy to find. Each one sits by the road, and above it a yellow beam of light shines into the sky.":'Nebijok – juos rasti lengva. Kiekvienas sėdi prie kelio, o virš jo į dangų šviečia geltonas šviesos stulpas.'),
   (EN?"Go. I'll be watching.":'Eik. Aš stebėsiu.')
 ];
-const STATUS_LINES = () => [(EN?`The hen is still waiting. You've brought ${QUEST.delivered.length} of 7 chicks.`:`Višta vis dar laukia. Atnešei ${QUEST.delivered.length} iš 7 viščiukų.`), (EN?"The arrow at the top of the screen will show the way to the nearest one. Listen for their peeping.":'Rodyklė ekrano viršuje parodys kelią iki artimiausio. Klausyk, kaip jie cypsi.')];
+const STATUS_LINES = () => [(EN?`The hen is still waiting. You've brought ${QUEST.delivered.length} of ${mpGoal(7)} chicks.`:`Višta vis dar laukia. Atnešei ${QUEST.delivered.length} iš ${mpGoal(7)} viščiukų.`), (EN?"The arrow at the top of the screen will show the way to the nearest one. Listen for their peeping.":'Rodyklė ekrano viršuje parodys kelią iki artimiausio. Klausyk, kaip jie cypsi.')];
 const DONE_LINES = [
   (EN?"All seven. The hen is happy again, and I… I smiled for the first time since the demon came.":'Visi septyni. Višta vėl laiminga, o aš… aš nusišypsojau pirmą kartą nuo tada, kai atėjo demonas.'),
   (EN?"You passed the test. Now I know I chose right.":'Tu išlaikei išbandymą. Dabar žinau, kad pasirinkau teisingai.'),
@@ -4061,7 +4064,17 @@ function chickSpots() {
     const dd = d.clone();
     spots.push({ where: NAMES[b], fixed: () => [dd.clone(), R + groundH(dd)] });
   }
-  return spots;
+  // more chicks for multiplayer: 2 more by the roads in every biome
+  for (let r = 1; r < 3; r++) for (let b = 0; b < NB; b++) {
+    const cs = [];
+    for (const path of roadPaths) for (const x of path.s) { if (x.bridge) continue; weights(x.d.x, x.d.y, x.d.z, W); if (W[b] < 0.8) continue; cs.push(x); }
+    let d = null;
+    if (cs.length) { const mine = spots.filter((_, j) => j % NB === b).map(q => q.fixed()[0]); let x = cs[0], bd = -1; for (const c of cs) { let m = 1e9; for (const q of mine) m = Math.min(m, c.d.distanceTo(q)); if (m > bd) { bd = m; x = c; } } d = moveAlong(x.d, x.side, (r === 1 ? 1 : -1) * (ROAD_HALF + 1.6)); if (TH(d) < 0.2) d = moveAlong(x.d, x.side, -(r === 1 ? 1 : -1) * (ROAD_HALF + 1.6)); }
+    if (!d) d = dirIn(b, 0.85, x => TH(x) > 0.3) || BC[b];
+    const dd = d.clone();
+    spots.push({ where: NAMES[b].replace(/^in the Starting City square$/, 'by the road in the Starting City').replace(/^Pradžios Miesto aikštėje$/, 'prie kelio Pradžios Mieste'), fixed: () => [dd.clone(), R + groundH(dd)] });
+  }
+  return spots.slice(0, CHICK_MAX);
 }
 
 function buildChicks() {
@@ -4069,6 +4082,7 @@ function buildChicks() {
   sp.forEach((spot, i) => {
     const m = makeChick(); world.add(m);
     const c = { i, spot, mesh: m, state: QUEST.delivered.includes(i) ? 'delivered' : 'waiting', pos: new V3(), up: new V3(0, 1, 0), fwd: new V3(1, 0, 0), hop: rnd() * 6, peepT: rr(1, 5) };
+    if (c.state === 'waiting' && i >= mpGoal(7)) c.state = 'off';
     m.visible = c.state === 'waiting' && QUEST.stage !== 'none';
     chicks.push(c);
   });
@@ -4079,13 +4093,14 @@ function startQuest() {
   chicks.forEach(c => { if (c.state === 'waiting') c.mesh.visible = true; });
   hen.g.visible = true;
   [392, 494, 587, 784].forEach((f, i) => tone(f, 0.5, { type: 'triangle', vol: 0.07, when: i * 0.15 }));
-  toast((EN?"Order #1: Save the Chicks":'Įsakymas #1: Išgelbėk viščiukus'), (EN?"Find 7 chicks – one in each biome – and bring them to the hen here in the Creator's Hall":'Surask 7 viščiukus – po vieną kiekviename biome – ir atnešk vištai čia, Kūrėjo Salėje'), '#ffe98a');
+  toast((EN?"Order #1: Save the Chicks":'Įsakymas #1: Išgelbėk viščiukus'), (EN?`Find ${mpGoal(7)} chicks – in every biome – and bring them to the hen here in the Creator's Hall`:`Surask ${mpGoal(7)} viščiukus – visuose biomuose – ir atnešk vištai čia, Kūrėjo Salėje`), '#ffe98a');
 }
 function nearestWaitingChick(from) { let b = null, bd = 1e9; for (const c of chicks) if (c.state === 'waiting') { const d = c.pos.distanceTo(from); if (d < bd) { bd = d; b = c; } } return b; }
 function followers() { return chicks.filter(c => c.state === 'following'); }
 const _cq = new V3();
 function updateChicks(dt, t) {
   if (QUEST.stage !== 'active') { updateQuestHud(); return; }
+  { const goal = mpGoal(7); for (const c of chicks) { if (c.state === 'waiting' && c.i >= goal) { c.state = 'off'; c.mesh.visible = false; } else if (c.state === 'off' && c.i < goal) { c.state = 'waiting'; c.mesh.visible = true; } } }
   const lead = player.inCar && ride ? ride : player;
   let prev = lead, k = 0;
   for (const c of chicks) {
@@ -4133,7 +4148,7 @@ function buildHen() {
 }
 function addChickToHen(i, quiet) {
   const m = makeChick(); m.userData.glow.visible = false; m.userData.beam.visible = false; m.scale.setScalar(0.8);
-  const a = hen.chicks.length / 7 * Math.PI * 2; m.position.set(hen.pos.x + Math.cos(a) * 1.4, 0.2, hen.pos.z + Math.sin(a) * 1.4); m.rotation.y = -a + Math.PI / 2;
+  const a = hen.chicks.length / Math.max(7, mpGoal(7)) * Math.PI * 2; m.position.set(hen.pos.x + Math.cos(a) * 1.4, 0.2, hen.pos.z + Math.sin(a) * 1.4); m.rotation.y = -a + Math.PI / 2;
   sanc.add(m); linearize(m); hen.chicks.push(m);
 }
 // following chicks come with you into the Sanctum (and back)
@@ -4154,18 +4169,18 @@ function updateSanctumChicks(dt, t) {
 }
 function nearHen() { return hen.g && hen.g.visible && Math.hypot(player.pos.x - hen.pos.x, player.pos.z - hen.pos.z) < 3.8; }
 function deliverChicks() {
-  const fol = followers(); if (!fol.length) { toast((EN?"The hen is sad":'Višta liūdi'), (EN?`Brought ${QUEST.delivered.length} of 7. Look for chicks in the biomes`:`Atnešta ${QUEST.delivered.length} iš 7. Ieškok viščiukų biomuose`), '#ffd84a'); grunt(600, 400, 0.2, 0.04); return; }
+  const fol = followers(); if (!fol.length) { toast((EN?"The hen is sad":'Višta liūdi'), (EN?`Brought ${QUEST.delivered.length} of ${mpGoal(7)}. Look for chicks in the biomes`:`Atnešta ${QUEST.delivered.length} iš ${mpGoal(7)}. Ieškok viščiukų biomuose`), '#ffd84a'); grunt(600, 400, 0.2, 0.04); return; }
   for (const c of fol) { c.state = 'delivered'; c.mesh.visible = false; QUEST.delivered.push(c.i); addChickToHen(c.i); }
   for (const m of sancFollowers) sanc.remove(m); sancFollowers.length = 0;
   saveQuest();
   for (let i = 0; i < 3; i++) tone(700 + i * 80, 0.09, { to: 500, type: 'square', vol: 0.04, lp: 2200, when: i * 0.11 });
   setTimeout(() => peep(player.pos, true), 300);
-  if (QUEST.delivered.length >= 7) {
+  if (QUEST.delivered.length >= mpGoal(7)) {
     QUEST.stage = 'done'; saveQuest(); addMoney(150); markQ1Done();
     [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, 0.6, { type: 'triangle', vol: 0.07, when: i * 0.12 }));
-    toast((EN?"Order complete!":'Įsakymas įvykdytas!'), (EN?"All 7 chicks are back with mama. The Creator wants to talk to you. Reward: 150 €":'Visi 7 viščiukai pas mamą. Kūrėjas nori su tavimi pasikalbėti. Apdovanojimas: 150 €'), '#ffe98a');
+    toast((EN?"Order complete!":'Įsakymas įvykdytas!'), (EN?`All ${mpGoal(7)} chicks are back with mama. The Creator wants to talk to you. Reward: 150 €`:`Visi ${mpGoal(7)} viščiukai pas mamą. Kūrėjas nori su tavimi pasikalbėti. Apdovanojimas: 150 €`), '#ffe98a');
     $('questChip').hidden = true;
-  } else toast((EN?`Brought ${QUEST.delivered.length} of 7`:`Atnešta ${QUEST.delivered.length} iš 7`), (EN?"The hen is happy! But still missing ":'Višta laiminga! Bet dar trūksta ') + (7 - QUEST.delivered.length), '#ffd84a');
+  } else toast((EN?`Brought ${QUEST.delivered.length} of ${mpGoal(7)}`:`Atnešta ${QUEST.delivered.length} iš ${mpGoal(7)}`), (EN?"The hen is happy! But still missing ":'Višta laiminga! Bet dar trūksta ') + (mpGoal(7) - QUEST.delivered.length), '#ffd84a');
 }
 
 // ---------- quest HUD and mini globe dots ----------
@@ -4174,7 +4189,7 @@ function updateQuestHud() {
   const el = $('questChip'); if (!el) return;
   if (QUEST.stage !== 'active') { updateQ2Hud(el); return; }
   el.hidden = false;
-  const fol = followers().length, left = 7 - QUEST.delivered.length - fol;
+  const fol = followers().length, left = mpGoal(7) - QUEST.delivered.length - fol;
   let arrow = '', dist = '';
   if (mode === 'planet' && left > 0) {
     const c = nearestWaitingChick(player.pos);
@@ -4187,7 +4202,7 @@ function updateQuestHud() {
       dist = ` · ${Math.round(c.pos.distanceTo(player.pos))} m`;
     }
   }
-  el.innerHTML = (EN?`${arrow}<div><div class="qt">Order #1: Save the Chicks</div><div class="qs">With the hen: <b>${QUEST.delivered.length}/7</b> · following you: <b>${fol}</b>${dist}</div></div>`:`${arrow}<div><div class="qt">Įsakymas #1: Išgelbėk viščiukus</div><div class="qs">Pas vištą: <b>${QUEST.delivered.length}/7</b> · seka paskui: <b>${fol}</b>${dist}</div></div>`);
+  el.innerHTML = (EN?`${arrow}<div><div class="qt">Order #1: Save the Chicks</div><div class="qs">With the hen: <b>${QUEST.delivered.length}/${mpGoal(7)}</b> · following you: <b>${fol}</b>${dist}</div></div>`:`${arrow}<div><div class="qt">Įsakymas #1: Išgelbėk viščiukus</div><div class="qs">Pas vištą: <b>${QUEST.delivered.length}/${mpGoal(7)}</b> · seka paskui: <b>${fol}</b>${dist}</div></div>`);
   // mini globe
   while (chickDots.length < chicks.length) { const m = mesh(G.sph, bmat(0xffd84a)); m.scale.setScalar(2.4); miniScene.add(m); chickDots.push(m); }
   chicks.forEach((c, i) => { chickDots[i].visible = c.state === 'waiting' && mode !== 'sanctum'; chickDots[i].position.copy(c.pos).normalize().multiplyScalar(R + 6); });
@@ -7049,7 +7064,7 @@ function scopeCamera() {
 const Q8 = { stage: 'none', got: [], back: null, owned: [] };   // none | feathers | wings | king | prince | home | cloud | done
 try { const s = JSON.parse(localStorage.getItem('modly-quest8') || 'null'); if (s) { Object.assign(Q8, s); if (Q8.stage === 'home') Q8.stage = 'prince'; } } catch (_) { }
 function saveQ8() { try { localStorage.setItem('modly-quest8', JSON.stringify({ stage: Q8.stage, got: Q8.got, back: Q8.back, owned: Q8.owned })); } catch (_) { } }
-const FEATHERS_N = 50;
+const FEATHERS_B = 50;
 const q8Active = () => Q8.stage !== 'none' && Q8.stage !== 'done';
 const Q8_GIVE = [
   (EN?"Look up, little one. See that big cloud over the city? That's where the Cloud King's castle stands.":'Pakelk galvą, mažasis. Matai tą didelį debesį virš miesto? Ten stovi Debesų Karaliaus pilis.'),
@@ -7058,7 +7073,7 @@ const Q8_GIVE = [
 ];
 function Q8_LINES() {
   if (Q8.stage === 'none') return Q8_GIVE;
-  if (Q8.stage === 'feathers') return [(EN?`You have ${Q8.got.length} of ${FEATHERS_N} feathers. They glow by the roads – the arrow will show you the nearest one.`:`Plunksnų turi ${Q8.got.length} iš ${FEATHERS_N}. Jos šviečia prie kelių – rodyklė parodys artimiausią.`)];
+  if (Q8.stage === 'feathers') return [(EN?`You have ${Q8.got.length} of ${mpGoal(FEATHERS_B)} feathers. They glow by the roads – the arrow will show you the nearest one.`:`Plunksnų turi ${Q8.got.length} iš ${mpGoal(FEATHERS_B)}. Jos šviečia prie kelių – rodyklė parodys artimiausią.`)];
   if (Q8.stage === 'wings') return [(EN?"All the feathers! Go to the costume kiosk in the square and trade them for wings.":'Visos plunksnos! Nueik į kostiumų kioską aikštėje ir iškeisk jas į sparnus.')];
   if (Q8.stage === 'king') return [(EN?"With wings, fly to the cloud over the city: Space – jump, and in the air press Space again and again – you'll flap your wings.":'Su sparnais skrisk į debesį virš miesto: Space – pašokti, o ore spausk Space vėl ir vėl – mojuosi sparnais.')];
   if (Q8.stage === 'prince' || Q8.stage === 'home') return [(EN?"The Prince is on the Mars cloud. Fly up, higher and higher, right through the sky.":'Princas – Marso debesyje. Skrisk aukštyn, vis aukštyn, pro patį dangų.')];
@@ -7086,10 +7101,11 @@ function makeFeather() {
 function buildFeathers() {
   const samples = [];
   for (const path of roadPaths) for (let i = 2; i < path.s.length - 2; i += 2) if (!path.s[i].bridge) samples.push(path.s[i]);
-  const step = samples.length / FEATHERS_N;
-  for (let k = 0; k < FEATHERS_N; k++) {
-    const x = samples[Math.floor(k * step + step * 0.37) % samples.length];
-    const d = moveAlong(x.d, x.side, (k % 2 ? 1 : -1) * (ROAD_HALF + 1.6));
+  const step = samples.length / FEATHERS_B;
+  for (let k = 0; k < FEATHERS_B * 3; k++) {   // 150 places; only as many as the goal are shown
+    const L = Math.floor(k / FEATHERS_B), kk = k % FEATHERS_B;
+    const x = samples[Math.floor(kk * step + step * (0.37 + L * 0.33)) % samples.length];
+    const d = moveAlong(x.d, x.side, (kk % 2 ? 1 : -1) * (L === 1 ? -1 : 1) * (ROAD_HALF + 1.6));
     const m = makeFeather(); world.add(m); linearize(m);
     const pos = d.clone().multiplyScalar(R + Math.max(groundH(d), TH(d)) + 0.6);
     m.position.copy(pos); orient(m, d, tangentToward(d, x.d)); m.visible = false;
@@ -7097,21 +7113,22 @@ function buildFeathers() {
   }
   if (Q8.stage === 'feathers') showFeathers();
 }
-function showFeathers() { for (const f of feathers) f.m.visible = Q8.stage === 'feathers' && !Q8.got.includes(f.i); }
+function showFeathers() { const g = mpGoal(FEATHERS_B); for (const f of feathers) f.m.visible = Q8.stage === 'feathers' && !Q8.got.includes(f.i) && f.i < g; }
 function updateFeathers(dt, t) {
   if (Q8.stage !== 'feathers') return;
-  const p = player.inCar ? ride.pos : player.pos;
+  const p = player.inCar ? ride.pos : player.pos, fg = mpGoal(FEATHERS_B);
   for (const f of feathers) {
+    if (!Q8.got.includes(f.i)) f.m.visible = f.i < fg;
     if (!f.m.visible) continue;
     f.m.position.copy(f.pos).addScaledVector(f.d, Math.sin(t * 2 + f.i) * 0.25); f.m.rotateY(dt * 2);
     if (f.pos.distanceTo(p) < (player.inCar ? 3.2 : 2.3)) {
       f.m.visible = false; Q8.got.push(f.i); saveQ8();
       tone(1320 + Q8.got.length * 8, 0.12, { type: 'sine', vol: 0.05 }); tone(1760, 0.1, { type: 'sine', vol: 0.04, when: 0.06 });
-      if (Q8.got.length >= FEATHERS_N) {
+      if (Q8.got.length >= mpGoal(FEATHERS_B)) {
         Q8.stage = 'wings'; saveQ8();
         [523, 659, 784, 1047].forEach((fr, i) => tone(fr, 0.4, { type: 'triangle', vol: 0.06, when: i * 0.1 }));
-        toast((EN?"All 50 feathers!":'Visos 50 plunksnų!'), (EN?"Go to the costume kiosk in the square and buy the wings":'Nueik į kostiumų kioską aikštėje ir nusipirk sparnus'), '#bfe8ff');
-      } else if (Q8.got.length % 10 === 0) toast((EN?`Feathers: ${Q8.got.length} / ${FEATHERS_N}`:`Plunksnų: ${Q8.got.length} / ${FEATHERS_N}`), (EN?"The arrow points to the nearest one":'Rodyklė rodo artimiausią'), '#bfe8ff');
+        toast((EN?`All ${mpGoal(FEATHERS_B)} feathers!`:`Visos ${mpGoal(FEATHERS_B)} plunksnų!`), (EN?"Go to the costume kiosk in the square and buy the wings":'Nueik į kostiumų kioską aikštėje ir nusipirk sparnus'), '#bfe8ff');
+      } else if (Q8.got.length % 10 === 0) toast((EN?`Feathers: ${Q8.got.length} / ${mpGoal(FEATHERS_B)}`:`Plunksnų: ${Q8.got.length} / ${mpGoal(FEATHERS_B)}`), (EN?"The arrow points to the nearest one":'Rodyklė rodo artimiausią'), '#bfe8ff');
     }
   }
 }
@@ -7332,7 +7349,7 @@ function updateQ8Hud(el) {
   if (!q8Active()) { el.hidden = true; return; }
   el.hidden = false;
   let step = '', target = null, arrow = '', dist = '';
-  if (Q8.stage === 'feathers') { step = (EN?`Feathers: <b>${Q8.got.length}/${FEATHERS_N}</b> – look by the roads`:`Plunksnos: <b>${Q8.got.length}/${FEATHERS_N}</b> – ieškok prie kelių`); const f = nearestFeather(); target = f && f.pos; }
+  if (Q8.stage === 'feathers') { step = (EN?`Feathers: <b>${Q8.got.length}/${mpGoal(FEATHERS_B)}</b> – look by the roads`:`Plunksnos: <b>${Q8.got.length}/${mpGoal(FEATHERS_B)}</b> – ieškok prie kelių`); const f = nearestFeather(); target = f && f.pos; }
   else if (Q8.stage === 'wings') { step = (EN?"Buy wings at the costume kiosk in the square":'Nusipirk sparnus kostiumų kioske aikštėje'); const it = inspectables.find(i => i.name === (EN?"Costume kiosk":'Kostiumų kioskas')); target = it && it.pos; }
   else if (Q8.stage === 'king') { step = Q8.back ? (EN?"Fly to the Cloud Castle over the city (Space in the air – flap)":'Skrisk į Debesų Pilį virš miesto (Space ore – mojuoti)') : (EN?"Put on the wings at the costume kiosk and fly to the cloud":'Užsidėk sparnus kostiumų kioske ir skrisk į debesį'); target = cloudKing && cloudKing.kingPos; }
   else if (Q8.stage === 'prince') { const alt = Math.max(0, Math.round(player.pos.length() - R - groundH(player.up))); step = mode === 'marscloud' ? (EN?"Find the Cloud Prince":'Surask Debesų Princą') : (EN?`Fly up to the Mars cloud · height ${alt}/90 m`:`Skrisk aukštyn į Marso debesį · aukštis ${alt}/90 m`); }
@@ -7350,8 +7367,8 @@ function backSvg(id) {
 function backCardsHtml() {
   return BACKS.map((b, i) => {
     const own = Q8.owned.includes(b.id), on = Q8.back === b.id;
-    const price = on ? (EN?"Take off":'Nusiimti') : own ? (EN?"Put on":'Užsidėti') : b.id === 'jetpack' ? (EN?"in the Cloud Castle":'Debesų Pilyje') : b.id === 'dragonwings' ? (EN?"Secret":'Paslaptis') : b.id === 'wings' ? (EN?`${Math.min(Q8.got.length, FEATHERS_N)}/${FEATHERS_N} feathers`:`${Math.min(Q8.got.length, FEATHERS_N)}/${FEATHERS_N} plunksnų`) : (EN?"The King's gift":'Karaliaus dovana');
-    const poor = !own && (b.id !== 'wings' || Q8.got.length < FEATHERS_N);
+    const price = on ? (EN?"Take off":'Nusiimti') : own ? (EN?"Put on":'Užsidėti') : b.id === 'jetpack' ? (EN?"in the Cloud Castle":'Debesų Pilyje') : b.id === 'dragonwings' ? (EN?"Secret":'Paslaptis') : b.id === 'wings' ? (EN?`${Math.min(Q8.got.length, mpGoal(FEATHERS_B))}/${mpGoal(FEATHERS_B)} feathers`:`${Math.min(Q8.got.length, mpGoal(FEATHERS_B))}/${mpGoal(FEATHERS_B)} plunksnų`) : (EN?"The King's gift":'Karaliaus dovana');
+    const poor = !own && (b.id !== 'wings' || Q8.got.length < mpGoal(FEATHERS_B));
     return `<button class="hcard${on ? ' active' : ''}${poor ? ' locked' : ''}" data-b="${i}"><div class="hpic">${backSvg(b.id)}</div><div class="hname">${b.name}</div><div class="hdesc">${b.desc}</div><div class="hfoot"><span class="hsize">${own ? (EN?"Owned":'Turi') : (EN?"On your back":'Ant nugaros')}</span><span class="hprice">${price}</span></div></button>`;
   }).join('');
 }
@@ -7359,7 +7376,7 @@ function pickBack(i) {
   const b = BACKS[i]; if (!b) return;
   const own = Q8.owned.includes(b.id);
   if (!own) {
-    if (b.id === 'wings' && Q8.got.length >= FEATHERS_N) {
+    if (b.id === 'wings' && Q8.got.length >= mpGoal(FEATHERS_B)) {
       Q8.owned.push('wings'); saveQ8(); sfx.chime();
       if (Q8.stage === 'wings') { Q8.stage = 'king'; saveQ8(); }
       wearBack('wings'); toast((EN?"You got wings for 50 feathers!":'Gavai sparnus už 50 plunksnų!'), (EN?"Space – jump, in the air press Space again and again – you'll fly. Fly to the Cloud Castle over the city":'Space – pašokti, ore spausk Space vėl ir vėl – skrisi. Skrisk į Debesų Pilį virš miesto'), '#bfe8ff');
@@ -14286,7 +14303,7 @@ function zoneTest() { permitTest(); Q26.exam = Q26.sign = Q26.permit = true; Q26
 // then run and grab it! And hurry: you have only 5 minutes, otherwise the rays escape from the tube and you start again.
 Q26.tubeHave = !!Q26.tubeHave; Q26.tube = !!Q26.tube;
 { const _c = teleCount; teleCount = () => _c() + (Q26.tube ? 1 : 0); }
-const TUBE_N = 10, TUBE_TIME = 300, TUBE_POS = new V3(UGC.x - 3, UGC.y, UGC.z + 13.5);
+const TUBE_B = 10, TUBE_TIME = 300, TUBE_POS = new V3(UGC.x - 3, UGC.y, UGC.z + 13.5);
 const TB = { tube: null, rays: [], caught: 0, time: TUBE_TIME, hud: null, wait: 0 };
 function makeTube(n) {
   const g = new THREE.Group();
@@ -14309,7 +14326,7 @@ function buildTube() {
     const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.1, 14, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xc85aff, transparent: true, opacity: 0.18, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending })); beam.position.y = 7; t.add(beam);
     const sg = makeSign((EN?"Test tube":'Mėgintuvėlis')); sg.position.set(1.6, 0, 0.6); t.add(sg); }
   linearize(t);
-  for (let i = 0; i < TUBE_N; i++) { const r = makeRay(); stScene.add(r); TB.rays.push({ m: r, caught: false, stun: 0, ph: rr(0, 6.28) }); rayJump(TB.rays[i], true); }
+  for (let i = 0; i < mpGoal(TUBE_B); i++) { const r = makeRay(); stScene.add(r); TB.rays.push({ m: r, caught: false, stun: 0, ph: rr(0, 6.28) }); rayJump(TB.rays[i], true); }
   refreshTube();
 }
 function raySpot(out) { for (let k = 0; k < 40; k++) { const a = rr(0, 6.28), d = rr(14, 105); out.set(Math.cos(a) * d, rr(1.1, 1.6), Math.sin(a) * d); if (onStar(out.x, out.z) && !starHit(out.x, out.z, 1) && !(Math.abs(out.x - ZONE.x) < ZONE_H + 1 && Math.abs(out.z - ZONE.z) < ZONE_H + 1)) return out; } return out; }
@@ -14327,7 +14344,7 @@ function tubeReset(msg) {
   TB.caught = 0; TB.time = TUBE_TIME; TB.rays.forEach(r => { r.caught = false; r.stun = 0; rayJump(r, true); }); refreshTube();
   if (msg) { redFlash('rgba(176,58,216,.6)', 500); toast((EN?"The rays escaped! 💨":'Spinduliai pabėgo! 💨'), (EN?"Time's up – all the rays jumped out of the test tube and flew away. Try again!":'Laikas baigėsi – visi spinduliai iššoko iš mėgintuvėlio ir išsilakstė. Bandyk iš naujo!'), '#b03ad8'); }
 }
-{ const _r = refreshTeleCorner; refreshTeleCorner = () => { _r(); if (Q26.tube && TP.slots) TP.slots[5].add(makeTube(TUBE_N)); }; }
+{ const _r = refreshTeleCorner; refreshTeleCorner = () => { _r(); if (Q26.tube && TP.slots) TP.slots[5].add(makeTube(mpGoal(TUBE_B))); }; }
 const nearTube = () => TB.tube && TB.tube.visible && isUnder() && Math.hypot(player.pos.x - TUBE_POS.x, player.pos.z - TUBE_POS.z) < 2.2;
 { const _a = starAction; starAction = () => {
     if (card) return _a();
@@ -14343,15 +14360,15 @@ const nearTube = () => TB.tube && TB.tube.visible && isUnder() && Math.hypot(pla
     if (!card && !cinema) TB.time -= dt;
     if (TB.time <= 0) { tubeReset(true); return; }
     const mm = Math.floor(TB.time / 60), ss = Math.floor(TB.time % 60);
-    TB.hud.innerHTML = (EN?`🧪 Purple rays: <b>${TB.caught}/${TUBE_N}</b> · ⏱ <b style="color:${TB.time < 60 ? '#ff6a6a' : '#fff'}">${mm}:${String(ss).padStart(2, '0')}</b>`:`🧪 Violetiniai spinduliai: <b>${TB.caught}/${TUBE_N}</b> · ⏱ <b style="color:${TB.time < 60 ? '#ff6a6a' : '#fff'}">${mm}:${String(ss).padStart(2, '0')}</b>`);
+    TB.hud.innerHTML = (EN?`🧪 Purple rays: <b>${TB.caught}/${mpGoal(TUBE_B)}</b> · ⏱ <b style="color:${TB.time < 60 ? '#ff6a6a' : '#fff'}">${mm}:${String(ss).padStart(2, '0')}</b>`:`🧪 Violetiniai spinduliai: <b>${TB.caught}/${mpGoal(TUBE_B)}</b> · ⏱ <b style="color:${TB.time < 60 ? '#ff6a6a' : '#fff'}">${mm}:${String(ss).padStart(2, '0')}</b>`);
     for (const r of TB.rays) { if (r.caught) continue; const m = r.m;
       m.userData.stick.rotation.z = Math.sin(t * 3 + r.ph) * 0.5; m.userData.stick.rotation.x = Math.cos(t * 2.3 + r.ph) * 0.4;
       if (r.stun > 0) { r.stun -= dt; m.userData.glow.material.color.setHex(Math.sin(t * 20) > 0 ? 0xffffff : 0xc85aff); m.userData.stick.material = bmat(0x8a8a9a); }
       else { m.userData.glow.material.color.setHex(0xc85aff); m.userData.stick.material = bmat(0xb03ad8); m.position.y = 1.35 + Math.sin(t * 2 + r.ph) * 0.25; }
       const d = Math.hypot(m.position.x - player.pos.x, m.position.z - player.pos.z);
       if (r.stun > 0 && d < 1.4 && Math.abs(player.pos.y - m.position.y) < 2) { r.caught = true; m.visible = false; TB.caught++; tone(1568, 0.15, { type: 'triangle', vol: 0.06 }); tone(2093, 0.15, { type: 'triangle', vol: 0.05, when: 0.08 });
-        toast((EN?`You caught a ray! ${TB.caught}/${TUBE_N}`:`Pagavai spindulį! ${TB.caught}/${TUBE_N}`), TB.caught >= TUBE_N ? (EN?"The test tube is full!":'Mėgintuvėlis pilnas!') : (EN?"Still left: ":'Dar liko: ') + (TUBE_N - TB.caught), '#b03ad8');
-        if (TB.caught >= TUBE_N) { Q26.tube = true; saveQ26(); refreshTube(); refreshTeleCorner(); bigBanner((EN?"TEST TUBE FULL!":'MĖGINTUVĖLIS PILNAS!'), (EN?"All 10 purple rays caught":'Visi 10 violetinių spindulių pagauti')); setTimeout(() => toast((EN?"Purple ray test tube":'Violetinių spindulių mėgintuvėlis'), (EN?`It appeared at the Teleport Corner. Step ${Q26.step} of ${TP_STEPS}`:`Jis atsirado Teleportacijos kampe. Žingsnis ${Q26.step} iš ${TP_STEPS}`), '#b03ad8'), 2600); return; }
+        toast((EN?`You caught a ray! ${TB.caught}/${mpGoal(TUBE_B)}`:`Pagavai spindulį! ${TB.caught}/${mpGoal(TUBE_B)}`), TB.caught >= mpGoal(TUBE_B) ? (EN?"The test tube is full!":'Mėgintuvėlis pilnas!') : (EN?"Still left: ":'Dar liko: ') + (mpGoal(TUBE_B) - TB.caught), '#b03ad8');
+        if (TB.caught >= mpGoal(TUBE_B)) { Q26.tube = true; saveQ26(); refreshTube(); refreshTeleCorner(); bigBanner((EN?"TEST TUBE FULL!":'MĖGINTUVĖLIS PILNAS!'), (EN?`All ${mpGoal(TUBE_B)} purple rays caught`:`Visi ${mpGoal(TUBE_B)} violetinių spindulių pagauti`)); setTimeout(() => toast((EN?"Purple ray test tube":'Violetinių spindulių mėgintuvėlis'), (EN?`It appeared at the Teleport Corner. Step ${Q26.step} of ${TP_STEPS}`:`Jis atsirado Teleportacijos kampe. Žingsnis ${Q26.step} iš ${TP_STEPS}`), '#b03ad8'), 2600); return; }
         continue; }
       if (r.stun <= 0 && d < 7 && !isUnder()) rayJump(r, false);
     }
@@ -14465,7 +14482,7 @@ function podTest(n) { tubeTest(0); Q26.tubeHave = true; Q26.tube = true; Q26.pod
 Q26.crystal = !!Q26.crystal; Q26.key = Q26.key || null;
 { const _c = teleCount; teleCount = () => _c() + (Q26.crystal ? 1 : 0); }
 const PR = { on: false, i: 0, t: 0, ring: null, spots: [], hud: null, picking: false };
-const PORTAL_N = 8, PORTAL_T = [20, 20, 20, 20, 20, 20, 20, 20];
+const PORTAL_B = 8, PORTAL_T = [20, 20, 20, 20, 20, 20, 20, 20];
 function makeCrystal() {
   const g = new THREE.Group(); const c = new THREE.Mesh(new THREE.OctahedronGeometry(0.55, 0), mat(0xb05aff, { emissive: 0x6a2aff, emissiveIntensity: 0.9, transparent: true, opacity: 0.9, metalness: 0.3 })); c.scale.y = 1.6; c.position.y = 0.9; g.add(c); g.userData.c = c;
   const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color: 0xb05aff, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending })); gl.scale.setScalar(2.6); gl.position.y = 0.9; g.add(gl); return g;
@@ -14484,7 +14501,7 @@ function portalPlace() {
   // each portal is 25–60 m from the previous one, somewhere on the star (not inside the danger zone)
   const prev = PR.i === 0 ? TP_CORNER : PR.spots[PR.i - 1]; const p = new V3();
   for (let k = 0; k < 60; k++) { raySpot(p); p.y = 0; const d = Math.hypot(p.x - prev.x, p.z - prev.z); if (d > 25 && d < 60) break; }
-  PR.spots[PR.i] = p.clone(); PR.ring.position.copy(p); PR.ring.visible = true; PR.t = PORTAL_T[PR.i];
+  PR.spots[PR.i] = p.clone(); PR.ring.position.copy(p); PR.ring.visible = true; PR.t = PORTAL_T[PR.i] || 20;
   tone(660 + PR.i * 80, 0.2, { type: 'sine', vol: 0.05 });
 }
 function startPortalRace() {
@@ -14492,7 +14509,7 @@ function startPortalRace() {
   PR.on = true; PR.i = 0; PR.spots = []; portalPlace();
   toast((EN?"The portal race has started! 🌀":'Portalų lenktynės prasidėjo! 🌀'), (EN?"Run (Shift) to the purple portal – follow the light beam!":'Bėk (Shift) į violetinį portalą – sek šviesos stulpą!'), '#c85aff');
 }
-function portalFail() { PR.on = false; PR.ring.visible = false; redFlash('rgba(176,90,255,.6)', 400); telePuff(stScene, player.pos); player.pos.set(TP_CORNER.x, 0, TP_CORNER.z + 1.5); player.vel.set(0, 0, 0); player.vr = 0; player.mesh.position.copy(player.pos); telePuff(stScene, player.pos); tone(300, 0.5, { to: 120, type: 'triangle', vol: 0.06 }); toast((EN?"The portal went out! 💨":'Portalas užgeso! 💨'), (EN?`You reached ${PR.i} of ${PORTAL_N}. You were teleported back to the Teleport Corner – press E and try again`:`Pasiekei ${PR.i} iš ${PORTAL_N}. Tave nuteleportavo atgal į Teleportacijos kampą – spausk E ir bandyk iš naujo`), '#c85aff'); }
+function portalFail() { PR.on = false; PR.ring.visible = false; redFlash('rgba(176,90,255,.6)', 400); telePuff(stScene, player.pos); player.pos.set(TP_CORNER.x, 0, TP_CORNER.z + 1.5); player.vel.set(0, 0, 0); player.vr = 0; player.mesh.position.copy(player.pos); telePuff(stScene, player.pos); tone(300, 0.5, { to: 120, type: 'triangle', vol: 0.06 }); toast((EN?"The portal went out! 💨":'Portalas užgeso! 💨'), (EN?`You reached ${PR.i} of ${mpGoal(PORTAL_B)}. You were teleported back to the Teleport Corner – press E and try again`:`Pasiekei ${PR.i} iš ${mpGoal(PORTAL_B)}. Tave nuteleportavo atgal į Teleportacijos kampą – spausk E ir bandyk iš naujo`), '#c85aff'); }
 function portalWin() {
   PR.on = false; PR.ring.visible = false; Q26.crystal = true; saveQ26(); refreshTeleCorner();
   bigBanner((EN?"ALL 8 PORTALS!":'VISI 8 PORTALAI!'), (EN?"A teleport crystal appeared in the Teleport Corner":'Teleporto kristalas atsirado Teleportacijos kampe'));
@@ -14550,7 +14567,7 @@ setTimeout(teleKeyRow, 0);
     if (Q26.stage === 'steps' && atCornerMid() && !PR.on) {
       if (Q26.crystal) { teleRitual(); return; }
       if (!sevenThere()) { startTalk((EN?"Teleport Corner":'Teleportacijos kampas'), [(EN?`Items are still missing here: ${Q26.step} of 7. When all 7 are on the pedestals – come back.`:`Čia dar trūksta daiktų: ${Q26.step} iš 7. Kai visi 7 bus ant pjedestalų – grįžk.`)], '#c85aff'); return; }
-      startTalk((EN?"Teleport Corner":'Teleportacijos kampas'), [(EN?"The seven items lit up… The corner is buzzing!":'Septyni daiktai sužibo… Kampas dūzgia!'), (EN?`STEP 8 – PORTAL RACE. ${PORTAL_N} portals will appear on the star – one after another. You have to reach each one before it goes out.`:`8 ŽINGSNIS – PORTALŲ LENKTYNĖS. Ant žvaigždės atsiras ${PORTAL_N} portalai – vienas po kito. Kiekvieną turi pasiekti, kol neužgeso.`), (EN?"You have 20 seconds for each portal. Follow the purple light beam and run (Shift)! Ready?":'Kiekvienam portalui turi po 20 sekundžių. Sek violetinį šviesos stulpą ir bėk (Shift)! Pasiruošęs?')], '#c85aff', () => startPortalRace()); return;
+      startTalk((EN?"Teleport Corner":'Teleportacijos kampas'), [(EN?"The seven items lit up… The corner is buzzing!":'Septyni daiktai sužibo… Kampas dūzgia!'), (EN?`STEP 8 – PORTAL RACE. ${mpGoal(PORTAL_B)} portals will appear on the star – one after another. You have to reach each one before it goes out.`:`8 ŽINGSNIS – PORTALŲ LENKTYNĖS. Ant žvaigždės atsiras ${mpGoal(PORTAL_B)} portalai – vienas po kito. Kiekvieną turi pasiekti, kol neužgeso.`), (EN?"You have 20 seconds for each portal. Follow the purple light beam and run (Shift)! Ready?":'Kiekvienam portalui turi po 20 sekundžių. Sek violetinį šviesos stulpą ir bėk (Shift)! Pasiruošęs?')], '#c85aff', () => startPortalRace()); return;
     }
     return _a();
   }; }
@@ -14561,9 +14578,9 @@ setTimeout(teleKeyRow, 0);
       PR.ring.userData.r.rotation.z += dt * 2; PR.ring.rotation.y = Math.atan2(player.pos.x - PR.ring.position.x, player.pos.z - PR.ring.position.z);
       if (!card && !cinema) PR.t -= dt;
       const dist = Math.hypot(player.pos.x - PR.ring.position.x, player.pos.z - PR.ring.position.z);
-      PR.hud.innerHTML = (EN?`🌀 Portal <b>${PR.i + 1}/${PORTAL_N}</b> · ⏱ <b style="color:${PR.t < 4 ? '#ff6a6a' : '#fff'}">${Math.max(0, PR.t).toFixed(1)} s</b> · ${Math.round(dist)} m`:`🌀 Portalas <b>${PR.i + 1}/${PORTAL_N}</b> · ⏱ <b style="color:${PR.t < 4 ? '#ff6a6a' : '#fff'}">${Math.max(0, PR.t).toFixed(1)} s</b> · ${Math.round(dist)} m`);
+      PR.hud.innerHTML = (EN?`🌀 Portal <b>${PR.i + 1}/${mpGoal(PORTAL_B)}</b> · ⏱ <b style="color:${PR.t < 4 ? '#ff6a6a' : '#fff'}">${Math.max(0, PR.t).toFixed(1)} s</b> · ${Math.round(dist)} m`:`🌀 Portalas <b>${PR.i + 1}/${mpGoal(PORTAL_B)}</b> · ⏱ <b style="color:${PR.t < 4 ? '#ff6a6a' : '#fff'}">${Math.max(0, PR.t).toFixed(1)} s</b> · ${Math.round(dist)} m`);
       PR.ring.scale.setScalar(0.7 + 0.3 * Math.min(1, PR.t / 4));
-      if (dist < 2.4 && player.pos.y < 5) { telePuff(stScene, PR.ring.position); PR.i++; if (PR.i >= PORTAL_N) portalWin(); else portalPlace(); }
+      if (dist < 2.4 && player.pos.y < 5) { telePuff(stScene, PR.ring.position); PR.i++; if (PR.i >= mpGoal(PORTAL_B)) portalWin(); else portalPlace(); }
       else if (PR.t <= 0) portalFail();
     }
     if (TP.slots && TP.slots[7].children[0]) { const c = TP.slots[7].children[0].userData.c; if (c) c.rotation.y += dt * 1.5; }
@@ -14821,7 +14838,7 @@ const Q28 = { stage: 'none', holder: -1, asked: [], pick: false, broken: [], gol
 try { const s = JSON.parse(localStorage.getItem('modly-quest28') || 'null'); if (s) Object.assign(Q28, s); } catch (_) { }
 function saveQ28() { try { localStorage.setItem('modly-quest28', JSON.stringify(Q28)); } catch (_) { } }
 const GS = { rocks: [], hud: null, pickMesh: null, sword: null, slashReady: 0, goldIdx: [] };
-const ROCK_N = 80, GOLD_N = 10;
+const ROCK_N = 80, GOLD_B = 10;
 function makePickaxe() { const g = new THREE.Group(); g.add(S(G.cyl, mat(0x8a5a2a), 0.04, 0.9, 0.04, 0, 0.45, 0)); const h = S(G.box, mat(0x9aa0aa, { metalness: 0.7, roughness: 0.3 }), 0.7, 0.1, 0.1, 0, 0.9, 0); g.add(h); g.add(S(G.cone, mat(0x9aa0aa, { metalness: 0.7 }), 0.06, 0.2, 0.06, 0.42, 0.9, 0).rotateZ(-Math.PI / 2)); g.add(S(G.cone, mat(0x9aa0aa, { metalness: 0.7 }), 0.06, 0.2, 0.06, -0.42, 0.9, 0).rotateZ(Math.PI / 2)); return g; }
 function makeGoldSword() {
   const g = new THREE.Group(), gold = mat(0xffd23a, { metalness: 0.9, roughness: 0.2, emissive: 0x6a4a00, emissiveIntensity: 0.4 });
@@ -14838,7 +14855,7 @@ setTimeout(() => { try { refreshGoldHeld(); } catch (_) { } }, 0);
 function buildMineRocks() {
   // the gold rocks are fixed (seeded), so they stay the same after reloading
   let seed = 4242; const rnd2 = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
-  const idx = []; while (idx.length < GOLD_N) { const k = Math.floor(rnd2() * ROCK_N); if (!idx.includes(k)) idx.push(k); } GS.goldIdx = idx;
+  const idx = []; while (idx.length < GOLD_B) { const k = Math.floor(rnd2() * ROCK_N); if (!idx.includes(k)) idx.push(k); } GS.goldIdx = idx;
   for (let i = 0; i < ROCK_N; i++) {
     let x, z, ok = false;
     for (let k = 0; k < 30 && !ok; k++) { const a = rnd2() * Math.PI * 2, r = 5 + rnd2() * (UGC_R - 9); x = UGC.x + Math.cos(a) * r; z = UGC.z + Math.sin(a) * r; ok = Math.hypot(x - UGC_EXIT.x, z - UGC_EXIT.z) > 5 && Math.hypot(x - MIXER_POS.x, z - MIXER_POS.z) > 4 && Math.hypot(x - TUBE_POS.x, z - TUBE_POS.z) > 4 && Math.hypot(x - (UGC.x + 8), z - (UGC.z + 6)) > 7 && !GS.rocks.some(q => Math.hypot(q.x - x, q.z - z) < 2.6); }
@@ -14849,13 +14866,17 @@ function buildMineRocks() {
     const box = { x, z, hx: sz * 0.8, hz: sz * 0.8, h: UGC.y + sz * 1.4 }; ST.ugBoxes.push(box);
     linearize(g); GS.rocks.push({ i, g, rock, x, z, sz, gold, glint, box, hp: 3 });
   }
+  // 20 more gold rocks for multiplayer (they only count when the goal is bigger)
+  let s3 = 777; const rnd3 = () => { s3 = (s3 * 16807) % 2147483647; return (s3 - 1) / 2147483646; };
+  while (idx.length < GOLD_B * 3) { const k = Math.floor(rnd3() * ROCK_N); if (idx.includes(k)) continue; idx.push(k); const r = GS.rocks[k]; r.gold = true;
+    r.glint = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color: 0xffe14d, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending })); r.glint.scale.setScalar(0.5); r.glint.position.set(r.sz * 0.5, r.sz * 0.9, r.sz * 0.4); r.g.add(r.glint); }
   refreshRocks();
 }
 function refreshRocks() { GS.rocks.forEach(r => { const broken = Q28.broken.includes(r.i); r.g.visible = !broken; r.box.h = broken ? -1e9 : UGC.y + r.sz * 1.4; }); }
 function rockBreak(r) {
   Q28.broken.push(r.i); r.g.visible = false; r.box.h = -1e9; noiseHit(0.4, { ft: 'lowpass', f: 600, vol: 0.2 });
   for (let i = 0; i < 10; i++) { const s = S(G.dodec, mat(0x4a4052), 0.2, 0.2, 0.2); s.position.set(r.x, UGC.y + 0.8, r.z); stScene.add(s); const v = randDir().multiplyScalar(rr(2, 5)); v.y = Math.abs(v.y) + 2; let life = 0.9; fx.push(d => { life -= d; v.y -= 12 * d; s.position.addScaledVector(v, d); if (s.position.y < UGC.y) { s.position.y = UGC.y; v.set(0, 0, 0); } if (life <= 0) { stScene.remove(s); return false; } return true; }); }
-  if (r.gold) { Q28.gold++; [784, 1047, 1319, 1568].forEach((f, k) => tone(f, 0.18, { type: 'triangle', vol: 0.06, when: k * 0.07 })); redFlash('rgba(255,210,58,.45)', 300); toast((EN?`GOLD PIECE! ${Q28.gold}/${GOLD_N} ✨`:`AUKSO GABALAS! ${Q28.gold}/${GOLD_N} ✨`), Q28.gold >= GOLD_N ? (EN?"All 10! Bring the gold to the Star Goddess":'Visi 10! Nešk auksą Žvaigždžių Dievei') : (EN?"It was hidden in a rock. Keep looking – gold only sparkles a tiny bit…":'Jis buvo paslėptas akmenyje. Ieškok toliau – auksas vos vos blyksteli…'), '#ffd23a'); }
+  if (r.gold && GS.goldIdx.indexOf(r.i) < mpGoal(GOLD_B)) { Q28.gold++; [784, 1047, 1319, 1568].forEach((f, k) => tone(f, 0.18, { type: 'triangle', vol: 0.06, when: k * 0.07 })); redFlash('rgba(255,210,58,.45)', 300); toast((EN?`GOLD PIECE! ${Q28.gold}/${mpGoal(GOLD_B)} ✨`:`AUKSO GABALAS! ${Q28.gold}/${mpGoal(GOLD_B)} ✨`), Q28.gold >= mpGoal(GOLD_B) ? (EN?`All ${mpGoal(GOLD_B)}! Bring the gold to the Star Goddess`:`Visi ${mpGoal(GOLD_B)}! Nešk auksą Žvaigždžių Dievei`) : (EN?"It was hidden in a rock. Keep looking – gold only sparkles a tiny bit…":'Jis buvo paslėptas akmenyje. Ieškok toliau – auksas vos vos blyksteli…'), '#ffd23a'); }
   saveQ28();
 }
 // mining: hit with the mouse while holding the pickaxe
@@ -14884,7 +14905,7 @@ const PICK_HINTS = [(EN?"A pickaxe? No, I don't have one… But I heard one litt
     if (nearStarGoddess() && Q27.stage === 'done' && Q28.stage !== 'done') {
       if (Q28.stage === 'none') { startTalk((EN?"Star Goddess":'Žvaigždžių Dievė'), [(EN?"Lightning, fire, teleport… You're getting stronger. Now – the FOURTH command: GOLDEN SWORD.":'Žaibas, ugnis, teleportacija… Tu stiprėji. Dabar – KETVIRTASIS įsakymas: AUKSINIS KARDAS.'), (EN?"I'll forge the sword myself. But I need 10 PIECES OF GOLD from my cave.":'Kardą nukalsiu aš pati. Bet man reikia 10 AUKSO GABALŲ iš mano urvo.'), (EN?"You can't dig gold with your hands. You need a PICKAXE. One of my little stars has it – but which one? Talk to them!":'Aukso negali iškasti rankomis. Tau reikia KIRTIKLIO. Jį turi viena iš mano žvaigždučių – bet kuri? Kalbinkis su jomis!'), (EN?"And know this: gold hides really well. It's inside rocks, and only sparkles a tiny bit up close.":'Ir žinok: auksas labai gerai slepiasi. Jis viduje akmenų, ir tik iš arti vos vos blyksteli.')], '#ffe8a0', () => { Q28.stage = 'pick'; Q28.holder = Math.floor(Math.random() * ST.kids.length); Q28.asked = []; saveQ28(); toast((EN?"Command 4: Golden sword":'4 įsakymas: Auksinis kardas'), (EN?"Ask the little stars which one has the pickaxe":'Klausinėk žvaigždučių, kuri turi kirtiklį'), '#ffd23a'); }); return; }
       if (Q28.stage === 'pick') { startTalk((EN?"Star Goddess":'Žvaigždžių Dievė'), [(EN?"One of my little stars has the pickaxe. Talk to them in the city and the forest!":'Kirtiklį turi viena iš mano žvaigždučių. Kalbinkis su jomis mieste ir miške!')], '#ffe8a0'); return; }
-      if (Q28.gold < GOLD_N) { startTalk((EN?"Star Goddess":'Žvaigždžių Dievė'), [(EN?`Gold pieces: ${Q28.gold} of ${GOLD_N}. Smash rocks in the cave – gold only sparkles a tiny bit up close.`:`Aukso gabalų: ${Q28.gold} iš ${GOLD_N}. Daužyk akmenis urve – auksas vos vos blyksteli tik iš arti.`)], '#ffe8a0'); return; }
+      if (Q28.gold < mpGoal(GOLD_B)) { startTalk((EN?"Star Goddess":'Žvaigždžių Dievė'), [(EN?`Gold pieces: ${Q28.gold} of ${mpGoal(GOLD_B)}. Smash rocks in the cave – gold only sparkles a tiny bit up close.`:`Aukso gabalų: ${Q28.gold} iš ${mpGoal(GOLD_B)}. Daužyk akmenis urve – auksas vos vos blyksteli tik iš arti.`)], '#ffe8a0'); return; }
       startTalk((EN?"Star Goddess":'Žvaigždžių Dievė'), [(EN?"Ten pieces of gold… How they shine! Give them to me.":'Dešimt aukso gabalų… Kaip jie šviečia! Duok juos man.'), (EN?"Now watch – I'll forge you a sword myself.":'Dabar žiūrėk – aš pati nukalsiu tau kardą.')], '#ffe8a0', forgeSword); return;
     }
     return _a();
@@ -14916,17 +14937,17 @@ fx.push(dt => { if (GS.swing > 0 && player.mesh) { GS.swing -= dt; const a = pla
 // ---------- every frame: glints, prompts, hud ----------
 { const _u = updateStar; updateStar = (dt, t) => { _u(dt, t);
     if (!GS.rocks.length) return;
-    if (Q28.stage === 'mine') for (const r of GS.rocks) { if (!r.gold || !r.g.visible) continue; const d = Math.hypot(r.x - player.pos.x, r.z - player.pos.z); r.glint.material.opacity = d < 4.5 && isUnder() ? Math.max(0, Math.sin(t * 3 + r.i)) ** 8 * (1 - d / 4.5) * 0.9 : 0; }
+    if (Q28.stage === 'mine') for (const r of GS.rocks) { if (!r.gold || !r.g.visible || GS.goldIdx.indexOf(r.i) >= mpGoal(GOLD_B)) { if (r.glint) r.glint.material.opacity = 0; continue; } const d = Math.hypot(r.x - player.pos.x, r.z - player.pos.z); r.glint.material.opacity = d < 4.5 && isUnder() ? Math.max(0, Math.sin(t * 3 + r.i)) ** 8 * (1 - d / 4.5) * 0.9 : 0; }
     if (!GS.hud) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;top:100px;left:50%;transform:translateX(-50%);background:rgba(40,30,4,.85);color:#fff4c8;border:1px solid rgba(255,210,58,.5);border-radius:14px;padding:6px 18px;font:700 15px system-ui,sans-serif;z-index:5;pointer-events:none;text-align:center'; document.body.appendChild(d); GS.hud = d; }
     const show = (Q28.stage === 'pick' || Q28.stage === 'mine') && !card; GS.hud.hidden = !show;
-    if (show) GS.hud.innerHTML = Q28.stage === 'pick' ? (EN?`🗡 Command 4: Golden sword<br>⛏ Which little star has the pickaxe? Asked: ${Q28.asked.length}`:`🗡 4 įsakymas: Auksinis kardas<br>⛏ Kuri žvaigždutė turi kirtiklį? Paklausta: ${Q28.asked.length}`) : (EN?`🗡 Command 4: Golden sword<br>✨ Gold pieces: <b>${Q28.gold}/${GOLD_N}</b> · rocks smashed: ${Q28.broken.length}`:`🗡 4 įsakymas: Auksinis kardas<br>✨ Aukso gabalai: <b>${Q28.gold}/${GOLD_N}</b> · sudaužyta akmenų: ${Q28.broken.length}`);
+    if (show) GS.hud.innerHTML = Q28.stage === 'pick' ? (EN?`🗡 Command 4: Golden sword<br>⛏ Which little star has the pickaxe? Asked: ${Q28.asked.length}`:`🗡 4 įsakymas: Auksinis kardas<br>⛏ Kuri žvaigždutė turi kirtiklį? Paklausta: ${Q28.asked.length}`) : (EN?`🗡 Command 4: Golden sword<br>✨ Gold pieces: <b>${Q28.gold}/${mpGoal(GOLD_B)}</b> · rocks smashed: ${Q28.broken.length}`:`🗡 4 įsakymas: Auksinis kardas<br>✨ Aukso gabalai: <b>${Q28.gold}/${mpGoal(GOLD_B)}</b> · sudaužyta akmenų: ${Q28.broken.length}`);
     if (!card && Q28.stage === 'pick' && nearStarKid()) setPrompt((EN?"<kbd>E</kbd> ask about the pickaxe":'<kbd>E</kbd> paklausti apie kirtiklį'));
     if (!card && Q28.stage === 'mine' && isUnder()) { const f = new V3(player.fwd.x, 0, player.fwd.z).normalize(); const near = GS.rocks.some(r => r.g.visible && Math.hypot(r.x - player.pos.x, r.z - player.pos.z) - r.sz * 0.6 < 2.6); if (near) setPrompt((EN?"Mouse button – smash the rock with the pickaxe (3 hits)":'Pelės mygtukas – daužyti akmenį kirtikliu (3 smūgiai)')); void f; }
   }; }
 fx.push(() => { if (GS.hud && mode !== 'star') GS.hud.hidden = true; return true; });
 function swordTest(n) {
   planeTest(3); Q27.stage = 'done'; Q27.key = 'Digit3'; saveQ27(); refreshPlane();
-  Q28.stage = n >= 1 ? 'mine' : 'none'; Q28.pick = n >= 1; Q28.broken = []; Q28.gold = n >= 2 ? GOLD_N : 0; Q28.asked = []; saveQ28(); refreshRocks(); refreshGoldHeld();
+  Q28.stage = n >= 1 ? 'mine' : 'none'; Q28.pick = n >= 1; Q28.broken = []; Q28.gold = n >= 2 ? mpGoal(GOLD_B) : 0; Q28.asked = []; saveQ28(); refreshRocks(); refreshGoldHeld();
   if (n === 1) { player.pos.set(UGC_EXIT.x + 2.5, UGC.y, UGC_EXIT.z); player.fwd.set(1, 0, 0); } else player.pos.set(0, 0, 9);
   toast((EN?"Test World: golden sword":'Bandymų pasaulis: auksinis kardas'), [(EN?"Talk to the Goddess (E)":'Kalbėk su Dieve (E)'), (EN?"You have the pickaxe – smash rocks in the cave":'Turi kirtiklį – daužyk akmenis urve'), (EN?"You have 10 gold – go to the Goddess":'Turi 10 aukso – eik pas Dievę')][Math.min(2, n | 0)], '#ffd23a');
 }
@@ -17980,7 +18001,7 @@ function mpPanel() {
     <div style="font:400 30px 'Lilita One',system-ui;color:#4ab0ff">🌐 Multiplayer</div><div style="opacity:.75;margin:4px 0 10px">${mpL('Žaisk internetu su draugais – iki 4 žaidėjų', 'Play online with friends – up to 4 players')}</div>`
     + (MP.on ? `<div style="font-size:13px;opacity:.7">${mpL('Kambario kodas', 'Room code')}</div><div style="font:400 46px 'Lilita One',system-ui;letter-spacing:6px;color:#ffe14d">${MP.code}</div>
       <div style="text-align:left;margin:8px 0"><b>👥 ${mpL('Žaidėjai', 'Players')} ${MP.n}/4</b><ul style="margin:6px 0 0 18px;padding:0">${list}</ul></div>
-      <div style="color:#ffb84a;font-size:14px">💪 ${mpL('Sunkumas', 'Difficulty')} ×${mpHpMul().toFixed(2)} – ${mpL('bosai turi daugiau gyvybių, smogia stipriau ir dažniau', 'bosses have more HP, hit harder and more often')}</div>
+      <div style="color:#ffb84a;font-size:14px">💪 ${mpL('Sunkumas', 'Difficulty')} ×${mpHpMul().toFixed(2)} – ${mpL('bosai turi daugiau gyvybių, smogia stipriau ir dažniau', 'bosses have more HP, hit harder and more often')}<br>🐤 ${mpL('Misijose reikia surinkti', 'Missions need')} ×${mpHpMul()} ${mpL('daugiau (pvz. viščiukų', 'more (e.g. chicks')} ${Math.round(7 * mpHpMul())})</div>
       <button data-play style="${B};background:#9aff7a;color:#13301a;font-size:20px">▶ ${mpL('Žaisti', 'Play')}</button>
       <button data-leave style="${B};background:#ff6a5a;color:#fff">🚪 ${mpL('Išeiti iš kambario', 'Leave the room')}</button>`
     : `<input data-nm maxlength="16" value="${(MP.name || mpMyName()).replace(/"/g, '')}" placeholder="${mpL('Tavo vardas', 'Your name')}" style="width:100%;box-sizing:border-box;padding:11px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.3);color:#fff;font:600 16px system-ui">
