@@ -18655,7 +18655,8 @@ function fcOut() {
   toast(fcL('Išlipai', 'You got out'), fcL('R šalia mašinos – vėl sėsti', 'R next to the car – get in again'), '#ffd23a');
 }
 // F: the garage everywhere
-{ const _s = onSpawnCar; onSpawnCar = (...a) => { if (fcOk() && !card) { openGarage(); return; } return _s(...a); }; }
+// (at the God of Thunder F places dynamite while digging – no car there)
+{ const _s = onSpawnCar; onSpawnCar = (...a) => { if (mode === 'dig' || mode === 'thunder') return; if (fcOk() && !card) { openGarage(); return; } return _s(...a); }; }
 { const _c = callVehicle; callVehicle = id => {
     if (!fcOk()) { if (FC.ride || FC.mesh) fcRemove(); return _c(id); }
     closeGarage(true);
