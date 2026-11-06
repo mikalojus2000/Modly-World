@@ -18734,12 +18734,12 @@ addEventListener('pagehide', rsSave); addEventListener('beforeunload', rsSave);
 
 // ================= AFK mode at the God of Thunder 💤 =================
 // Press O (or U if O is your fireball key) on the Thunder planet or while digging: the little man DIGS DOWN BY HIMSELF,
-// slowly – one layer (from one drought plug to the next) takes 20 seconds, and every plug he reaches is blown up.
-// So if you start in the middle between two plugs, the next one comes in 10 seconds. Every minute he finds a gem.
+// slowly – one layer (from one drought plug to the next) takes 25 seconds, and every plug he reaches is blown up.
+// So if you start in the middle between two plugs, the next one comes in 12.5 seconds. Every minute he finds a gem.
 // Any move key stops it.
 const AFK = { on: false, gemAt: 0, last: 0, depth: 0, el: null, plugs: 0, gems: 0, money: 0 };
 const afkL = (lt, en) => EN ? en : lt;
-const AFK_LAYER_S = 20, AFK_GEM = 60000;
+const AFK_LAYER_S = 25, AFK_GEM = 60000;
 const afkRate = () => LAYER / AFK_LAYER_S;   // rows per second
 const afkKey = () => (typeof Q25 !== 'undefined' && Q25.key === 'KeyO') ? 'KeyU' : 'KeyO';
 const afkHere = () => started && (mode === 'thunder' || mode === 'dig') && typeof Q21 !== 'undefined' && Q21.stage === 'dig';
@@ -18749,7 +18749,7 @@ function afkStart() {
   const now = Date.now(); AFK.on = true; AFK.last = now; AFK.gemAt = now + AFK_GEM; AFK.depth = Math.max(0, Math.floor(Q21.y)); AFK.plugs = 0; AFK.gems = 0; AFK.money = 0;
   for (const k in keys) keys[k] = false;
   [392, 330, 262].forEach((f, i) => tone(f, 0.25, { type: 'triangle', vol: 0.05, when: i * 0.12 }));
-  toast(afkL('💤 AFK režimas įjungtas', '💤 AFK mode on'), afkL('Žmogeliukas pats kasa žemyn (vienas sluoksnis – 20 s) ir sprogdina kamščius. Kas 1 min – brangakmenis. Judėk arba spausk ', 'The little man digs down by himself (one layer – 20 s) and blows up the plugs. Every 1 min – a gem. Move or press ') + keyLabel(afkKey()) + afkL(' – išjungti', ' to stop'), '#c8b0ff');
+  toast(afkL('💤 AFK režimas įjungtas', '💤 AFK mode on'), afkL('Žmogeliukas pats kasa žemyn (vienas sluoksnis – 25 s) ir sprogdina kamščius. Kas 1 min – brangakmenis. Judėk arba spausk ', 'The little man digs down by himself (one layer – 25 s) and blows up the plugs. Every 1 min – a gem. Move or press ') + keyLabel(afkKey()) + afkL(' – išjungti', ' to stop'), '#c8b0ff');
 }
 function afkStop(why) {
   if (!AFK.on) return; AFK.on = false; saveQ21();
