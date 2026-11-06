@@ -304,6 +304,7 @@ try { const bk = localStorage.getItem('modly-mpbackup'); if (bk && !sessionStora
 // On "My planet" the powers (1 fireball, 2 teleport, 3 lightning, 4 sword, 5 portal) do not work: the number keys only choose blocks.
 // (this listener is the very first one, so it runs before every power key listener)
 addEventListener('keydown', e => {
+  if (typeof mode !== 'undefined' && mode === 'sub' && started && /^(Digit\d|Key[TXBRVGJOUIPLKCZ])$/.test(e.code)) { e.stopImmediatePropagation(); e.preventDefault(); return; }   // the submarine: no powers, no car
   if (typeof mode === 'undefined' || mode !== 'mine' || !started || card) return;
   if (e.code === 'KeyF' && !e.repeat && typeof mnFloor === 'function') { e.stopImmediatePropagation(); e.preventDefault(); mnFloor(MN.sel); return; }
   const m = /^Digit([0-9])$/.exec(e.code); if (!m) return;
@@ -17793,13 +17794,13 @@ function frame() {
     updatePlanet(dt, T); updateCameraPlanet(dt); if (scoped) scopeCamera();
   } else {
     if (!locked) { const k = 1.8 * dt / 0.0024; if (keys.ArrowLeft) look(-k, 0); if (keys.ArrowRight) look(k, 0); if (keys.ArrowUp) look(0, -k * 0.6); if (keys.ArrowDown) look(0, k * 0.6); }
-    if (mode === 'home') updateHome(dt, T); else if (mode === 'kitchen') updateKitchen(dt, T); else if (mode === 'mars') updateMars(dt, T); else if (mode === 'museum') updateMuseum(dt, T); else if (mode === 'caphouse') updateCapHouse(dt, T); else if (mode === 'cave') updateCave(dt, T); else if (mode === 'candy') updateCandy(dt, T); else if (mode === 'rainbow') updateRainbow(dt, T); else if (mode === 'marscloud') updateMarsCloud(dt, T); else if (mode === 'stone') updateStone(dt, T); else if (mode === 'future') updateFuture(dt, T); else if (mode === 'space') updateSpace(dt, T); else if (mode === 'sea') updateSea(dt, T); else if (mode === 'sun') updateSunWorld(dt, T); else if (mode === 'time') updateTimeWorld(dt, T); else if (mode === 'upside') updateUpside(dt, T); else if (mode === 'thunder') updateThunder(dt, T); else if (mode === 'dig') updateDig(dt, T); else if (mode === 'wind') updateWind(dt, T); else if (mode === 'star') updateStar(dt, T); else if (mode === 'cloudcastle') updateCloudCastle(dt, T); else if (mode === 'pk') updatePk(dt, T); else if (mode === 'sr') updateSr(dt, T); else if (mode === 'tea') updateTea(dt, T); else if (mode === 'void') updateVoid(dt, T); else if (mode === 'mine') updateMine(dt, T); else if (mode === 'fam') updateFam(dt, T); else { updateSanctum(dt, T); applyShake(dt); }
+    if (mode === 'home') updateHome(dt, T); else if (mode === 'kitchen') updateKitchen(dt, T); else if (mode === 'mars') updateMars(dt, T); else if (mode === 'museum') updateMuseum(dt, T); else if (mode === 'caphouse') updateCapHouse(dt, T); else if (mode === 'cave') updateCave(dt, T); else if (mode === 'candy') updateCandy(dt, T); else if (mode === 'rainbow') updateRainbow(dt, T); else if (mode === 'marscloud') updateMarsCloud(dt, T); else if (mode === 'stone') updateStone(dt, T); else if (mode === 'future') updateFuture(dt, T); else if (mode === 'space') updateSpace(dt, T); else if (mode === 'sea') updateSea(dt, T); else if (mode === 'sun') updateSunWorld(dt, T); else if (mode === 'time') updateTimeWorld(dt, T); else if (mode === 'upside') updateUpside(dt, T); else if (mode === 'thunder') updateThunder(dt, T); else if (mode === 'dig') updateDig(dt, T); else if (mode === 'wind') updateWind(dt, T); else if (mode === 'star') updateStar(dt, T); else if (mode === 'cloudcastle') updateCloudCastle(dt, T); else if (mode === 'pk') updatePk(dt, T); else if (mode === 'sr') updateSr(dt, T); else if (mode === 'tea') updateTea(dt, T); else if (mode === 'void') updateVoid(dt, T); else if (mode === 'mine') updateMine(dt, T); else if (mode === 'fam') updateFam(dt, T); else if (mode === 'sub') { if (typeof updateSub === 'function') updateSub(dt, T); } else { updateSanctum(dt, T); applyShake(dt); }
   }
   bubbleU.uTime.value = T; bubbleU.uCam.value.copy(camera.position);
   renderer.setViewport(0, 0, innerWidth, innerHeight); renderer.clear();
-  renderer.render(mode === 'fam' ? famScene : mode === 'mine' ? mineScene : mode === 'void' ? voidScene : mode === 'tea' ? teaScene : mode === 'sr' ? srScene : mode === 'pk' ? pkScene : mode === 'sanctum' ? sanc : mode === 'home' ? homeScene : mode === 'kitchen' ? kitchenScene : mode === 'mars' ? marsScene : mode === 'museum' ? museumScene : mode === 'caphouse' ? chScene : mode === 'cave' ? caveScene : mode === 'candy' ? candyScene : mode === 'rainbow' ? rbScene : mode === 'marscloud' ? mcScene : mode === 'stone' ? ugScene : mode === 'future' ? fuScene : mode === 'space' ? spScene : mode === 'cloudcastle' ? ccScene : mode === 'upside' ? udScene : mode === 'star' || (mode === 'attract' && inStar()) ? stScene : mode === 'wind' || (mode === 'attract' && inWind()) ? wiScene : mode === 'thunder' || mode === 'dig' || (mode === 'attract' && inThunder()) ? thScene : mode === 'time' || (mode === 'attract' && inTime()) ? twScene : mode === 'sun' || (mode === 'attract' && inSun()) ? sunScene : mode === 'sea' || (mode === 'attract' && inSeaForever()) ? seaScene : scene, camera);
-  if (mode !== 'attract' && mode !== 'home' && mode !== 'kitchen' && mode !== 'mars' && mode !== 'museum' && mode !== 'caphouse' && mode !== 'cave' && mode !== 'candy' && mode !== 'rainbow' && mode !== 'marscloud' && mode !== 'stone' && mode !== 'future' && mode !== 'space' && mode !== 'sea' && mode !== 'sun' && mode !== 'cloudcastle' && mode !== 'time' && mode !== 'upside' && mode !== 'thunder' && mode !== 'dig' && mode !== 'wind' && mode !== 'star' && mode !== 'pk' && mode !== 'sr' && mode !== 'tea' && mode !== 'void' && mode !== 'mine' && mode !== 'fam') renderMini();
-  $('mapFrame').style.visibility = mode === 'home' || mode === 'kitchen' || mode === 'mars' || mode === 'museum' || mode === 'caphouse' || mode === 'cave' || mode === 'candy' || mode === 'rainbow' || mode === 'marscloud' || mode === 'stone' || mode === 'future' || mode === 'space' || mode === 'sea' || mode === 'sun' || mode === 'cloudcastle' || mode === 'time' || mode === 'upside' || mode === 'thunder' || mode === 'dig' || mode === 'wind' || mode === 'star' || mode === 'pk' || mode === 'sr' || mode === 'tea' || mode === 'void' || mode === 'mine' || mode === 'fam' ? 'hidden' : '';
+  renderer.render(mode === 'sub' ? (typeof SUB_SCENE !== 'undefined' ? SUB_SCENE : scene) : mode === 'fam' ? famScene : mode === 'mine' ? mineScene : mode === 'void' ? voidScene : mode === 'tea' ? teaScene : mode === 'sr' ? srScene : mode === 'pk' ? pkScene : mode === 'sanctum' ? sanc : mode === 'home' ? homeScene : mode === 'kitchen' ? kitchenScene : mode === 'mars' ? marsScene : mode === 'museum' ? museumScene : mode === 'caphouse' ? chScene : mode === 'cave' ? caveScene : mode === 'candy' ? candyScene : mode === 'rainbow' ? rbScene : mode === 'marscloud' ? mcScene : mode === 'stone' ? ugScene : mode === 'future' ? fuScene : mode === 'space' ? spScene : mode === 'cloudcastle' ? ccScene : mode === 'upside' ? udScene : mode === 'star' || (mode === 'attract' && inStar()) ? stScene : mode === 'wind' || (mode === 'attract' && inWind()) ? wiScene : mode === 'thunder' || mode === 'dig' || (mode === 'attract' && inThunder()) ? thScene : mode === 'time' || (mode === 'attract' && inTime()) ? twScene : mode === 'sun' || (mode === 'attract' && inSun()) ? sunScene : mode === 'sea' || (mode === 'attract' && inSeaForever()) ? seaScene : scene, camera);
+  if (mode !== 'attract' && mode !== 'home' && mode !== 'kitchen' && mode !== 'mars' && mode !== 'museum' && mode !== 'caphouse' && mode !== 'cave' && mode !== 'candy' && mode !== 'rainbow' && mode !== 'marscloud' && mode !== 'stone' && mode !== 'future' && mode !== 'space' && mode !== 'sea' && mode !== 'sun' && mode !== 'cloudcastle' && mode !== 'time' && mode !== 'upside' && mode !== 'thunder' && mode !== 'dig' && mode !== 'wind' && mode !== 'star' && mode !== 'pk' && mode !== 'sr' && mode !== 'tea' && mode !== 'void' && mode !== 'mine' && mode !== 'fam' && mode !== 'sub') renderMini();
+  $('mapFrame').style.visibility = mode === 'home' || mode === 'kitchen' || mode === 'mars' || mode === 'museum' || mode === 'caphouse' || mode === 'cave' || mode === 'candy' || mode === 'rainbow' || mode === 'marscloud' || mode === 'stone' || mode === 'future' || mode === 'space' || mode === 'sea' || mode === 'sun' || mode === 'cloudcastle' || mode === 'time' || mode === 'upside' || mode === 'thunder' || mode === 'dig' || mode === 'wind' || mode === 'star' || mode === 'pk' || mode === 'sr' || mode === 'tea' || mode === 'void' || mode === 'mine' || mode === 'fam' || mode === 'sub' ? 'hidden' : '';
   requestAnimationFrame(frame);
 }
 
@@ -18640,7 +18641,7 @@ const mp5Me = () => String(MP.name || (typeof mpMyName === 'function' ? mpMyName
 // You drive it like walking, but much faster, and it comes with you through portals and doors.
 const FC = { mesh: null, id: null, ride: false, last: null, spin: 0 };
 const fcL = (lt, en) => EN ? en : lt;
-const fcOk = () => started && mode !== 'planet' && mode !== 'attract' && !cinema;
+const fcOk = () => started && mode !== 'planet' && mode !== 'attract' && mode !== 'sub' && !cinema;
 function fcRemove() { if (FC.mesh && FC.mesh.parent) FC.mesh.parent.remove(FC.mesh); FC.mesh = null; FC.ride = false; FC.id = null; }
 function fcSummon(id) {
   const spec = CARS.find(c => c.id === id); if (!spec) return;
@@ -18666,7 +18667,7 @@ function fcOut() {
 }
 // F: the garage everywhere
 // (at the God of Thunder F places dynamite while digging – no car there)
-{ const _s = onSpawnCar; onSpawnCar = (...a) => { if (mode === 'dig' || mode === 'thunder') return; if (fcOk() && !card) { openGarage(); return; } return _s(...a); }; }
+{ const _s = onSpawnCar; onSpawnCar = (...a) => { if (mode === 'dig' || mode === 'thunder' || mode === 'sub') return; if (fcOk() && !card) { openGarage(); return; } return _s(...a); }; }
 { const _c = callVehicle; callVehicle = id => {
     if (!fcOk()) { if (FC.ride || FC.mesh) fcRemove(); return _c(id); }
     closeGarage(true);
@@ -18812,5 +18813,264 @@ fx.push(() => {
   if (AFK.el.innerHTML !== html) AFK.el.innerHTML = html;
   return true;
 });
+
+// ================= THE DEEP SEA 🌊 – a 2D submarine journey of 500 m =================
+// Go to the yellow submarine at the edge of the Starting City square (E). Your submarine dives and sails 500 m.
+// Sea monsters attack: shoot them with the turret (left mouse) or a torpedo (right mouse). If a monster reaches the
+// hull, it BREAKS IN: a hole lets the water in and the monster runs at you inside the submarine.
+// Inside: A/D – walk, Space – hit the monster, E – fix a hole. W/S – submarine up/down. Checkpoints every 100 m.
+// At 430 m the GIANT SQUID blocks the way. Reach 500 m and find the sunken treasure!
+const sbL = (lt, en) => EN ? en : lt;
+const SUB_SCENE = new THREE.Scene();
+const SB = { cv: null, ctx: null, hud: null, dist: 0, cp: 0, y: 0.45, vy: 0, mx: 0.5, hearts: 5, water: 0, holes: [], intr: [], mons: [], shots: [], fx: [], bubbles: [],
+  spawnT: 1.5, gunT: 0, torT: 0, hitT: 0, biteT: 0, aimX: 0.75, aimY: 0.4, boss: null, bossDone: false, over: false, won: false, t: 0, shake: 0, prevE: false, prevSp: false, msg: '', msgT: 0 };
+let SUBQ = { done: false, best: 0 }; try { const s = JSON.parse(localStorage.getItem('modly-sub') || 'null'); if (s) SUBQ = Object.assign(SUBQ, s); } catch (_) { }
+function saveSub() { try { localStorage.setItem('modly-sub', JSON.stringify(SUBQ)); } catch (_) { } }
+const sbHard = () => (typeof mpHpMul === 'function' && typeof MP !== 'undefined' && MP.on) ? mpHpMul() : 1;
+const SB_TYPES = {
+  fish: { hp: 1, r: 14, sp: 120, col: '#ff9a3a', from: 0, w: 5 },
+  jelly: { hp: 2, r: 18, sp: 55, col: '#ff8ad8', from: 40, w: 3 },
+  shark: { hp: 4, r: 30, sp: 150, col: '#8a9ab0', from: 110, w: 3 },
+  angler: { hp: 5, r: 26, sp: 90, col: '#3a2a4a', from: 200, w: 2 },
+  eel: { hp: 3, r: 16, sp: 190, col: '#6ac85a', from: 280, w: 2 },
+};
+function sbMsg(m) { SB.msg = m; SB.msgT = 2.5; }
+// ---------- going in and out ----------
+function enterSub() {
+  if (!SB.cv) { const c = document.createElement('canvas'); c.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:1;background:#0a2a4a;cursor:crosshair'; document.body.appendChild(c); SB.cv = c; SB.ctx = c.getContext('2d');
+    c.addEventListener('mousedown', e => { if (mode !== 'sub') return; SB.aimX = e.clientX / innerWidth; SB.aimY = e.clientY / innerHeight; if (!locked && !lockFailed) requestLock(); sbFire(e.button === 2 ? 'R' : 'L'); });
+    c.addEventListener('contextmenu', e => e.preventDefault()); }
+  SB.cv.hidden = false; mode = 'sub'; if (typeof digHud === 'function') digHud(true);
+  try { localStorage.removeItem('modly-pos'); } catch (_) { }
+  sbReset(SB.cp); musicSet(2); setScope(false);
+  $('bName').textContent = sbL('Gilioji jūra', 'The Deep Sea'); $('bEn').textContent = sbL('Povandeninis laivas', 'Submarine'); $('bAtm').textContent = sbL('Nuplauk 500 m. Monstrai gali įsibrauti į laivą!', 'Sail 500 m. Monsters can break into the submarine!');
+  document.documentElement.style.setProperty('--biome', '#3ac8ff');
+  setTimeout(() => toast(sbL('🌊 GILIOJI JŪRA', '🌊 THE DEEP SEA'), sbL('Kairysis pelės – patranka · dešinysis – torpeda · W/S – aukštyn/žemyn · Viduje: A/D – eiti, Space – mušti, E – taisyti skylę · Q – namo', 'Left mouse – turret · right – torpedo · W/S – up/down · Inside: A/D – walk, Space – hit, E – fix a hole · Q – home'), '#3ac8ff'), 500);
+}
+function sbReset(cp) {
+  Object.assign(SB, { dist: cp, y: 0.45, vy: 0, mx: 0.5, hearts: 5, water: 0, holes: [], intr: [], mons: [], shots: [], fx: [], spawnT: 2, gunT: 0, torT: 0, boss: null, over: false, won: false, shake: 0 });
+  if (cp >= 430) SB.bossDone = true; else SB.bossDone = false;
+}
+function leaveSub(msg) {
+  if (SB.cv) SB.cv.hidden = true; if (SB.hud) SB.hud.hidden = true; if (typeof digHud === 'function') digHud(false);
+  fadeTo(() => { cinema = null; portalToPlanet(); toast(sbL('Grįžai į Pradžios Miestą', 'Back in the Starting City'), msg || sbL('Geltonas povandeninis laivas tavęs laukia aikštės krašte', 'The yellow submarine waits for you at the edge of the square'), '#3ac8ff'); });
+}
+// ---------- weapons ----------
+function sbGeom() { const W = innerWidth, H = innerHeight, u = Math.min(W / 1000, H / 600); const rx = 190 * u, ry = 78 * u, sx = W * 0.26, sy = H * SB.y; return { W, H, u, rx, ry, sx, sy, tx: sx + rx * 0.15, ty: sy - ry - 10 * u }; }
+function sbFire(side) {
+  if (mode !== 'sub' || SB.over || card) return; const g = sbGeom();
+  const ax = SB.aimX * g.W, ay = SB.aimY * g.H;
+  if (side === 'R') { if (SB.torT > 0) { sbMsg(sbL('Torpeda dar kraunasi…', 'The torpedo is still loading…')); return; } SB.torT = 2.5;
+    const x0 = g.sx + g.rx, y0 = g.sy + g.ry * 0.3, a = Math.atan2(ay - y0, ax - x0); SB.shots.push({ x: x0, y: y0, vx: Math.cos(a) * 520 * g.u, vy: Math.sin(a) * 520 * g.u, tor: true, life: 3 });
+    tone(140, 0.4, { to: 60, type: 'sawtooth', vol: 0.08, lp: 800 }); noiseHit(0.3, { f: 900, fto: 200, vol: 0.12 }); return; }
+  if (SB.gunT > 0) return; SB.gunT = 0.16;
+  const a = Math.atan2(ay - g.ty, ax - g.tx); SB.shots.push({ x: g.tx + Math.cos(a) * 30 * g.u, y: g.ty + Math.sin(a) * 30 * g.u, vx: Math.cos(a) * 950 * g.u, vy: Math.sin(a) * 950 * g.u, life: 1.2 });
+  tone(900, 0.05, { to: 400, type: 'square', vol: 0.03, lp: 3000 });
+}
+{ const _h = handDown; handDown = (side, ...a) => { if (mode === 'sub') { sbFire(side); return; } return _h(side, ...a); }; }
+addEventListener('mousemove', e => { if (mode !== 'sub') return; if (locked) { SB.aimX = clamp(SB.aimX + e.movementX / innerWidth, 0.02, 0.98); SB.aimY = clamp(SB.aimY + e.movementY / innerHeight, 0.04, 0.96); } else { SB.aimX = e.clientX / innerWidth; SB.aimY = e.clientY / innerHeight; } });
+// keys: only the ones the submarine uses (no cars, powers, phone… down here)
+addEventListener('keydown', e => {
+  if (mode !== 'sub' || !started || card) return;
+  if (e.code === 'Escape' || e.code === 'KeyM' || e.code === 'KeyH' || e.code === 'KeyG' || e.code === 'KeyN' || e.code === 'Backquote') return;
+  if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight'].includes(e.code)) return;   // movement – the game keeps track
+  e.stopImmediatePropagation(); e.preventDefault(); if (e.repeat) return;
+  if (e.code === 'Space') sbHit();
+  if (e.code === 'KeyE') sbFix();
+  if (e.code === 'KeyQ') leaveSub();
+  if (e.code === 'KeyF') sbFire('R');
+}, true);
+addEventListener('keyup', e => { if (mode === 'sub' && e.code === 'Space') e.stopImmediatePropagation(); }, true);
+// ---------- inside the submarine ----------
+function sbHit() {
+  if (SB.over || SB.hitT > 0) return; SB.hitT = 0.3; let any = false;
+  for (const m of SB.intr) if (Math.abs(m.x - SB.mx) < 0.09) { m.hp--; m.fl = 0.15; any = true; if (m.hp <= 0) { m.dead = true; sbMsg(sbL('Monstras išmestas! 💥', 'Monster thrown out! 💥')); tone(520, 0.12, { to: 900, type: 'triangle', vol: 0.05 }); } }
+  SB.intr = SB.intr.filter(m => !m.dead); tone(any ? 300 : 200, 0.08, { to: 120, type: 'square', vol: 0.04, lp: 1200 });
+}
+function sbFix() {
+  if (SB.over) return; const h = SB.holes.find(h => Math.abs(h.x - SB.mx) < 0.08);
+  if (!h) { if (SB.holes.length) sbMsg(sbL('Prieik prie skylės ir spausk E', 'Walk to the hole and press E')); return; }
+  h.fix = (h.fix || 0) + 0.34; tone(700 + h.fix * 300, 0.06, { type: 'square', vol: 0.03, lp: 2000 });
+  if (h.fix >= 1) { SB.holes.splice(SB.holes.indexOf(h), 1); sbMsg(sbL('Skylė užtaisyta! 🔧', 'Hole fixed! 🔧')); tone(880, 0.15, { type: 'triangle', vol: 0.05 }); }
+}
+function sbBreakIn(m, g) {
+  const rel = clamp((m.x - (g.sx - g.rx * 0.75)) / (g.rx * 1.5), 0.05, 0.95);
+  SB.holes.push({ x: rel, fix: 0 }); SB.shake = 0.5; redFlash('rgba(255,40,40,.3)', 250);
+  noiseHit(0.5, { f: 500, fto: 80, vol: 0.25 }); tone(110, 0.4, { to: 50, type: 'sawtooth', vol: 0.08, lp: 600 });
+  if (m.type !== 'jelly') SB.intr.push({ x: rel, hp: Math.ceil(Math.min(4, m.hpMax) * 0.75), t: m.type, fl: 0 });
+  sbMsg(sbL('💥 Monstras įsibrovė į laivą! Mušk jį (Space) ir taisyk skylę (E)!', '💥 A monster broke in! Hit it (Space) and fix the hole (E)!'));
+}
+function sbLose(why) {
+  if (SB.over) return; SB.over = true; noiseHit(1, { f: 300, fto: 40, vol: 0.3 }); tone(200, 1.2, { to: 50, type: 'sawtooth', vol: 0.08, lp: 600 });
+  toast(sbL('🌊 Laivas nuskendo!', '🌊 The submarine sank!'), why + ' · ' + sbL(`Bandai iš naujo nuo ${SB.cp} m`, `Trying again from ${SB.cp} m`), '#ff6a5a');
+  setTimeout(() => { if (mode === 'sub') sbReset(SB.cp); }, 2500);
+}
+function sbWin() {
+  SB.won = true; SB.over = true; const first = !SUBQ.done; SUBQ.done = true; SUBQ.best = 500; saveSub(); SB.cp = 0;
+  [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.3, { type: 'triangle', vol: 0.07, when: i * 0.1 }));
+  if (first) addMoney(3000);
+  bigBanner(sbL('🏆 NUSKENDĘS LOBIS!', '🏆 THE SUNKEN TREASURE!'), first ? sbL('Nuplaukei 500 m per monstrų jūrą! +3000 €', 'You sailed 500 m through the monster sea! +3000 €') : sbL('Vėl nuplaukei visus 500 m!', 'You sailed all 500 m again!'));
+  setTimeout(() => { if (mode === 'sub') leaveSub(sbL('Lobis tavo! Laivas laukia, jei nori plaukti dar kartą', 'The treasure is yours! The submarine waits if you want to sail again')); }, 5000);
+}
+// ---------- every frame ----------
+function updateSub(dt, t) {
+  const g = sbGeom(), k = keys; SB.t += dt;
+  if (!SB.over) {
+    // the submarine moves
+    const up = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0); SB.vy += (-up * 1.6 - SB.vy * 3) * dt; SB.y = clamp(SB.y + SB.vy * dt, 0.22, 0.74);
+    const walk = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0); SB.mx = clamp(SB.mx + walk * 0.45 * dt, 0.04, 0.96);
+    const blocked = SB.boss && !SB.boss.dead;
+    const sp = blocked ? 0 : 10 * Math.max(0.3, 1 - SB.holes.length * 0.2) * (1 - SB.water * 0.4);
+    SB.dist = Math.min(500, SB.dist + sp * dt); if (SB.dist > SUBQ.best) { SUBQ.best = Math.floor(SB.dist); }
+    const ncp = Math.floor(SB.dist / 100) * 100; if (ncp > SB.cp && ncp < 500) { SB.cp = ncp; saveSub(); sbMsg(sbL(`🚩 Kontrolinis taškas: ${ncp} m`, `🚩 Checkpoint: ${ncp} m`)); tone(660, 0.2, { type: 'triangle', vol: 0.05 }); tone(880, 0.2, { type: 'triangle', vol: 0.05, when: 0.12 }); }
+    if (SB.dist >= 430 && !SB.bossDone && !SB.boss) { SB.boss = { x: g.W + 200 * g.u, y: g.H * 0.45, hp: Math.round(40 * sbHard()), hpMax: Math.round(40 * sbHard()), t: 0, fl: 0, armT: 3 }; sbMsg(sbL('🦑 MILŽINIŠKAS KALMARAS užstojo kelią!', '🦑 The GIANT SQUID blocks the way!')); tone(60, 1.5, { to: 40, type: 'sawtooth', vol: 0.12, lp: 300 }); }
+    if (SB.dist >= 500) sbWin();
+    // monsters come
+    SB.spawnT -= dt;
+    if (SB.spawnT <= 0 && !SB.won) { SB.spawnT = Math.max(0.55, 2.2 - SB.dist / 260) / Math.sqrt(sbHard()) * (blocked ? 2 : 1);
+      const list = Object.keys(SB_TYPES).filter(n => SB.dist >= SB_TYPES[n].from); let tot = 0; list.forEach(n => tot += SB_TYPES[n].w); let r = Math.random() * tot, type = list[0]; for (const n of list) { r -= SB_TYPES[n].w; if (r <= 0) { type = n; break; } }
+      const T0 = SB_TYPES[type], hp = Math.max(1, Math.round(T0.hp * sbHard()));
+      SB.mons.push({ type, x: g.W + 40 * g.u, y: g.H * (0.12 + Math.random() * 0.76), hp, hpMax: hp, r: T0.r * g.u, sp: T0.sp * g.u * (0.8 + Math.random() * 0.4), ph: Math.random() * 6, fl: 0 }); }
+    // monsters swim at the submarine
+    for (const m of SB.mons) { m.ph += dt; const dx = g.sx - m.x, dy = g.sy - m.y, d = Math.hypot(dx, dy) || 1;
+      const wob = m.type === 'jelly' ? Math.sin(m.ph * 2) * 40 * g.u : m.type === 'eel' ? Math.sin(m.ph * 6) * 90 * g.u : 0;
+      m.x += (dx / d * m.sp - (m.type === 'jelly' ? 0 : 0)) * dt; m.y += (dy / d * m.sp * 0.7 + wob) * dt; m.fl = Math.max(0, m.fl - dt);
+      const ex = (m.x - g.sx) / (g.rx + m.r * 0.6), ey = (m.y - g.sy) / (g.ry + m.r * 0.6); if (ex * ex + ey * ey < 1) { m.dead = true; sbBreakIn(m, g); } }
+    SB.mons = SB.mons.filter(m => !m.dead && m.x > -100);
+    // the boss
+    if (SB.boss && !SB.boss.dead) { const b = SB.boss; b.t += dt; b.fl = Math.max(0, b.fl - dt); b.x += ((g.W * 0.8) - b.x) * dt * 0.8; b.y = g.H * (0.45 + Math.sin(b.t * 0.7) * 0.18);
+      b.armT -= dt; if (b.armT <= 0) { b.armT = 3.2 / Math.sqrt(sbHard()); SB.mons.push({ type: 'eel', x: b.x - 60 * g.u, y: b.y + (Math.random() - 0.5) * 120 * g.u, hp: 2, hpMax: 2, r: 16 * g.u, sp: 200 * g.u, ph: 0, fl: 0 }); } }
+    // shots
+    for (const s of SB.shots) { s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+      const targets = SB.boss && !SB.boss.dead ? SB.mons.concat([SB.boss]) : SB.mons;
+      for (const m of targets) { const rr2 = m === SB.boss ? 110 * g.u : m.r; if (Math.hypot(m.x - s.x, m.y - s.y) < rr2) {
+        if (s.tor) { s.life = 0; SB.fx.push({ x: s.x, y: s.y, t: 0, r: 90 * g.u }); noiseHit(0.5, { f: 700, fto: 60, vol: 0.25 }); for (const q of targets) if (Math.hypot(q.x - s.x, q.y - s.y) < 95 * g.u + (q === SB.boss ? 80 * g.u : 0)) { q.hp -= 5; q.fl = 0.2; } }
+        else { s.life = 0; m.hp -= 1; m.fl = 0.12; }
+        break; } } }
+    SB.shots = SB.shots.filter(s => s.life > 0 && s.x > -50 && s.x < g.W + 50 && s.y > -50 && s.y < g.H + 50);
+    for (const m of SB.mons) if (m.hp <= 0 && !m.dead) { m.dead = true; SB.fx.push({ x: m.x, y: m.y, t: 0, r: m.r * 2 }); tone(400 + Math.random() * 200, 0.1, { to: 150, type: 'triangle', vol: 0.04 }); }
+    SB.mons = SB.mons.filter(m => !m.dead);
+    if (SB.boss && !SB.boss.dead && SB.boss.hp <= 0) { SB.boss.dead = true; SB.bossDone = true; SB.fx.push({ x: SB.boss.x, y: SB.boss.y, t: 0, r: 220 * g.u }); bigBanner(sbL('🦑 KALMARAS NUGALĖTAS!', '🦑 SQUID DEFEATED!'), sbL('Kelias laisvas – plauk iki 500 m!', 'The way is free – sail on to 500 m!')); }
+    // inside: monsters run at you, water comes in
+    for (const m of SB.intr) { m.fl = Math.max(0, m.fl - dt); const d = SB.mx - m.x; if (Math.abs(d) > 0.035) m.x += Math.sign(d) * 0.22 * dt; else { m.bite = (m.bite || 0) - dt; if (m.bite <= 0) { m.bite = 1.1; SB.hearts--; redFlash('rgba(255,40,40,.35)', 200); tone(160, 0.15, { to: 90, type: 'square', vol: 0.05, lp: 900 }); } } }
+    SB.water = clamp(SB.water + (SB.holes.length ? SB.holes.length * 0.028 : -0.03) * dt, 0, 1);
+    if (SB.water >= 1) sbLose(sbL('Laivas prisipildė vandens', 'The submarine filled with water'));
+    if (SB.hearts <= 0) sbLose(sbL('Monstrai tave nugalėjo', 'The monsters beat you'));
+  }
+  SB.gunT -= dt; SB.torT -= dt; SB.hitT -= dt; SB.msgT -= dt; SB.shake = Math.max(0, SB.shake - dt);
+  if (keys.KeyE && SB.holes.length && !SB.prevE) { } SB.prevE = !!keys.KeyE;
+  sbDraw(g, t); sbHud();
+  setPrompt('');
+}
+// ---------- drawing ----------
+function sbDraw(g, t) {
+  const c = SB.cv, x = SB.ctx, W = g.W, H = g.H, u = g.u; if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+  x.save(); if (SB.shake > 0) x.translate((Math.random() - 0.5) * 16 * SB.shake, (Math.random() - 0.5) * 16 * SB.shake);
+  const deep = SB.dist / 500, grd = x.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, `rgb(${Math.round(40 - 30 * deep)},${Math.round(140 - 110 * deep)},${Math.round(200 - 140 * deep)})`); grd.addColorStop(1, `rgb(${Math.round(10 - 6 * deep)},${Math.round(40 - 30 * deep)},${Math.round(80 - 50 * deep)})`);
+  x.fillStyle = grd; x.fillRect(-20, -20, W + 40, H + 40);
+  // light rays
+  x.globalAlpha = 0.07 * (1 - deep); x.fillStyle = '#fff'; for (let i = 0; i < 5; i++) { const px = ((i * 260 - SB.dist * 6) % (W + 300) + W + 300) % (W + 300) - 150; x.beginPath(); x.moveTo(px, 0); x.lineTo(px + 80, 0); x.lineTo(px + 240, H); x.lineTo(px + 120, H); x.fill(); } x.globalAlpha = 1;
+  // sea floor with rocks and kelp
+  const fy = H * 0.93; x.fillStyle = '#2a2a3a'; x.fillRect(0, fy, W, H - fy);
+  for (let i = -1; i < 14; i++) { const wx = i * 110 * u - ((SB.dist * 30 * u) % (110 * u)), seed = Math.floor(SB.dist * 30 * u / (110 * u)) + i;
+    x.fillStyle = seed % 3 ? '#3a3a50' : '#4a4060'; x.beginPath(); x.ellipse(wx, fy, 40 * u, 18 * u, 0, Math.PI, 0); x.fill();
+    if (seed % 2 === 0) { x.strokeStyle = '#2a8a4a'; x.lineWidth = 6 * u; x.beginPath(); x.moveTo(wx + 30 * u, fy); for (let k = 1; k <= 5; k++) x.lineTo(wx + 30 * u + Math.sin(t * 2 + k + seed) * 10 * u, fy - k * 22 * u); x.stroke(); } }
+  // distance markers
+  x.fillStyle = 'rgba(255,255,255,.5)'; x.font = `bold ${14 * u}px system-ui`; for (let m = Math.ceil((SB.dist - 10) / 50) * 50; m < SB.dist + 60; m += 50) { const px = g.sx + (m - SB.dist) * 30 * u; if (px > 0 && px < W) { x.fillRect(px - 1, fy - 40 * u, 2, 40 * u); x.fillText(m + ' m', px + 4, fy - 30 * u); } }
+  // the treasure near 500 m
+  if (SB.dist > 470) { const px = g.sx + (500 - SB.dist) * 30 * u; x.fillStyle = '#8a5a2b'; x.fillRect(px - 40 * u, fy - 40 * u, 80 * u, 40 * u); x.fillStyle = '#ffd23a'; x.fillRect(px - 44 * u, fy - 50 * u, 88 * u, 14 * u); x.fillStyle = 'rgba(255,230,80,.5)'; x.beginPath(); x.arc(px, fy - 40 * u, 60 * u + Math.sin(t * 4) * 6 * u, 0, 7); x.fill(); }
+  // bubbles
+  if (SB.bubbles.length < 40) SB.bubbles.push({ x: Math.random() * W, y: H + 10, r: (2 + Math.random() * 5) * u, s: 30 + Math.random() * 60 });
+  x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = 1.5; for (const b of SB.bubbles) { b.y -= b.s * 0.016; b.x -= 0.5; if (b.y < -10) { b.y = H + 10; b.x = Math.random() * W; } x.beginPath(); x.arc(b.x, b.y, b.r, 0, 7); x.stroke(); }
+  // monsters
+  for (const m of SB.mons) sbDrawMon(x, m.type, m.x, m.y, m.r, t + m.ph, m.fl > 0, u, m.hp / m.hpMax);
+  if (SB.boss && !SB.boss.dead) sbDrawBoss(x, SB.boss, t, u);
+  // the submarine (a cut-away – you see inside)
+  const { sx, sy, rx, ry } = g;
+  x.fillStyle = '#ffd23a'; x.beginPath(); x.ellipse(sx, sy, rx, ry, 0, 0, 7); x.fill(); x.strokeStyle = '#b08a10'; x.lineWidth = 4 * u; x.stroke();
+  x.fillStyle = '#ffd23a'; x.fillRect(sx - 30 * u, sy - ry - 34 * u, 70 * u, 40 * u); x.strokeRect(sx - 30 * u, sy - ry - 34 * u, 70 * u, 40 * u);
+  // propeller
+  x.fillStyle = '#8a8a9a'; const pa = Math.sin(t * 30) * 22 * u; x.fillRect(sx - rx - 18 * u, sy - pa, 10 * u, pa * 2 || 2);
+  // the inside
+  const ix0 = sx - rx * 0.75, ix1 = sx + rx * 0.75, iy0 = sy - ry * 0.6, iy1 = sy + ry * 0.62;
+  x.fillStyle = '#3a3048'; x.beginPath(); x.roundRect ? x.roundRect(ix0, iy0, ix1 - ix0, iy1 - iy0, 14 * u) : x.rect(ix0, iy0, ix1 - ix0, iy1 - iy0); x.fill();
+  x.fillStyle = '#6a5a7a'; x.fillRect(ix0, iy1 - 8 * u, ix1 - ix0, 8 * u);
+  for (let i = 0; i < 4; i++) { const wx = ix0 + (i + 0.5) * (ix1 - ix0) / 4; x.fillStyle = '#7ad8ff'; x.beginPath(); x.arc(wx, iy0 + 20 * u, 10 * u, 0, 7); x.fill(); x.strokeStyle = '#b08a10'; x.lineWidth = 3 * u; x.stroke(); }
+  // water inside
+  if (SB.water > 0) { const wh = (iy1 - iy0) * SB.water; x.fillStyle = 'rgba(40,140,255,.55)'; x.fillRect(ix0, iy1 - wh, ix1 - ix0, wh); }
+  // holes
+  for (const h of SB.holes) { const hx = ix0 + h.x * (ix1 - ix0); x.strokeStyle = '#111'; x.lineWidth = 3 * u; x.beginPath(); x.moveTo(hx - 12 * u, iy0 + 40 * u); x.lineTo(hx - 2 * u, iy0 + 52 * u); x.lineTo(hx + 8 * u, iy0 + 38 * u); x.lineTo(hx + 14 * u, iy0 + 56 * u); x.stroke();
+    x.fillStyle = 'rgba(80,180,255,.8)'; for (let k = 0; k < 3; k++) { const dy = ((t * 120 + k * 30) % 60) * u; x.beginPath(); x.arc(hx + (k - 1) * 4 * u, iy0 + 56 * u + dy, 3 * u, 0, 7); x.fill(); }
+    if (h.fix > 0) { x.fillStyle = '#9aff7a'; x.fillRect(hx - 15 * u, iy0 + 28 * u, 30 * u * h.fix, 4 * u); } }
+  // the monsters inside
+  for (const m of SB.intr) { const mx = ix0 + m.x * (ix1 - ix0); sbDrawMon(x, m.t, mx, iy1 - 22 * u, 16 * u, t * 2, m.fl > 0, u, 1); }
+  // you (the little green man)
+  { const mx = ix0 + SB.mx * (ix1 - ix0), my = iy1 - 8 * u, s = u * 1.1, sw = Math.sin(t * 10) * ((keys.KeyA || keys.KeyD) ? 1 : 0);
+    x.fillStyle = '#5ac84a'; x.fillRect(mx - 3 * s - sw * 3 * s, my - 22 * s, 4 * s, 22 * s); x.fillRect(mx + 1 * s + sw * 3 * s, my - 22 * s, 4 * s, 22 * s);
+    x.fillRect(mx - 8 * s, my - 48 * s, 16 * s, 28 * s); x.beginPath(); x.arc(mx, my - 58 * s, 11 * s, 0, 7); x.fill();
+    x.fillStyle = '#fff'; x.beginPath(); x.arc(mx + 4 * s, my - 60 * s, 3 * s, 0, 7); x.fill(); x.fillStyle = '#111'; x.beginPath(); x.arc(mx + 5 * s, my - 60 * s, 1.5 * s, 0, 7); x.fill();
+    if (SB.hitT > 0.15) { x.strokeStyle = '#fff'; x.lineWidth = 3 * u; x.beginPath(); x.arc(mx, my - 36 * s, 26 * s, -0.8, 0.8); x.stroke(); } }
+  // the turret on top, pointing at the crosshair
+  { const ax = SB.aimX * W, ay = SB.aimY * H, a = Math.atan2(ay - g.ty, ax - g.tx); x.save(); x.translate(g.tx, g.ty); x.rotate(a); x.fillStyle = '#5a5a6a'; x.fillRect(0, -6 * u, 40 * u, 12 * u); x.restore(); x.fillStyle = '#7a7a8a'; x.beginPath(); x.arc(g.tx, g.ty, 14 * u, 0, 7); x.fill();
+    x.fillStyle = SB.torT > 0 ? '#7a5a5a' : '#ff5a3a'; x.fillRect(sx + rx - 14 * u, sy + ry * 0.3 - 6 * u, 26 * u, 12 * u); }
+  // shots
+  for (const s of SB.shots) { x.fillStyle = s.tor ? '#ffb84a' : '#fff6a0'; x.beginPath(); x.arc(s.x, s.y, (s.tor ? 7 : 3.5) * u, 0, 7); x.fill(); }
+  for (const f of SB.fx) { f.t += 0.016; x.fillStyle = `rgba(255,${200 - f.t * 300},60,${Math.max(0, 0.8 - f.t * 2)})`; x.beginPath(); x.arc(f.x, f.y, f.r * Math.min(1, f.t * 5), 0, 7); x.fill(); } SB.fx = SB.fx.filter(f => f.t < 0.4);
+  // crosshair
+  { const ax = SB.aimX * W, ay = SB.aimY * H; x.strokeStyle = '#fff'; x.lineWidth = 2; x.beginPath(); x.arc(ax, ay, 12, 0, 7); x.moveTo(ax - 18, ay); x.lineTo(ax - 6, ay); x.moveTo(ax + 6, ay); x.lineTo(ax + 18, ay); x.moveTo(ax, ay - 18); x.lineTo(ax, ay - 6); x.moveTo(ax, ay + 6); x.lineTo(ax, ay + 18); x.stroke(); }
+  // message
+  if (SB.msgT > 0) { x.font = `bold ${20 * u}px system-ui`; x.textAlign = 'center'; const tw = x.measureText(SB.msg).width; x.fillStyle = 'rgba(10,20,40,.8)'; x.fillRect(W / 2 - tw / 2 - 14, H * 0.8 - 26 * u, tw + 28, 40 * u); x.fillStyle = '#ffe14d'; x.fillText(SB.msg, W / 2, H * 0.8); x.textAlign = 'left'; }
+  x.restore();
+}
+function sbDrawMon(x, type, px, py, r, t, flash, u, hpf) {
+  x.save(); x.translate(px, py);
+  if (type === 'fish') { x.fillStyle = flash ? '#fff' : '#ff9a3a'; x.beginPath(); x.ellipse(0, 0, r, r * 0.6, 0, 0, 7); x.fill(); x.beginPath(); x.moveTo(r * 0.8, 0); x.lineTo(r * 1.5, -r * 0.5); x.lineTo(r * 1.5, r * 0.5); x.fill(); x.fillStyle = '#111'; x.beginPath(); x.arc(-r * 0.5, -r * 0.15, r * 0.15, 0, 7); x.fill(); }
+  if (type === 'jelly') { x.fillStyle = flash ? '#fff' : 'rgba(255,138,216,.85)'; x.beginPath(); x.arc(0, 0, r, Math.PI, 0); x.fill(); x.strokeStyle = 'rgba(255,138,216,.8)'; x.lineWidth = 2 * u; for (let k = -2; k <= 2; k++) { x.beginPath(); x.moveTo(k * r * 0.35, 0); x.quadraticCurveTo(k * r * 0.35 + Math.sin(t * 4 + k) * 6 * u, r * 0.8, k * r * 0.35, r * 1.5); x.stroke(); } }
+  if (type === 'shark') { x.fillStyle = flash ? '#fff' : '#8a9ab0'; x.beginPath(); x.ellipse(0, 0, r * 1.3, r * 0.5, 0, 0, 7); x.fill(); x.beginPath(); x.moveTo(-r * 0.1, -r * 0.4); x.lineTo(r * 0.3, -r * 1.0); x.lineTo(r * 0.5, -r * 0.4); x.fill(); x.beginPath(); x.moveTo(r * 1.2, 0); x.lineTo(r * 1.8, -r * 0.6); x.lineTo(r * 1.7, r * 0.5); x.fill(); x.fillStyle = '#fff'; for (let k = 0; k < 4; k++) { x.beginPath(); x.moveTo(-r * 1.1 + k * r * 0.18, r * 0.12); x.lineTo(-r * 1.02 + k * r * 0.18, r * 0.3); x.lineTo(-r * 0.94 + k * r * 0.18, r * 0.12); x.fill(); } x.fillStyle = '#111'; x.beginPath(); x.arc(-r * 0.8, -r * 0.1, r * 0.08, 0, 7); x.fill(); }
+  if (type === 'angler') { x.fillStyle = flash ? '#fff' : '#3a2a4a'; x.beginPath(); x.arc(0, 0, r, 0, 7); x.fill(); x.strokeStyle = '#5a4a6a'; x.lineWidth = 3 * u; x.beginPath(); x.moveTo(-r * 0.3, -r * 0.9); x.quadraticCurveTo(-r * 0.6, -r * 1.8, -r * 1.3, -r * 1.2); x.stroke(); x.fillStyle = `rgba(255,255,140,${0.6 + Math.sin(t * 6) * 0.3})`; x.beginPath(); x.arc(-r * 1.3, -r * 1.2, r * 0.25, 0, 7); x.fill(); x.fillStyle = '#fff'; for (let k = 0; k < 5; k++) { x.beginPath(); x.moveTo(-r * 0.9 + k * r * 0.2, r * 0.2); x.lineTo(-r * 0.8 + k * r * 0.2, r * 0.55); x.lineTo(-r * 0.7 + k * r * 0.2, r * 0.2); x.fill(); } }
+  if (type === 'eel') { x.strokeStyle = flash ? '#fff' : '#6ac85a'; x.lineWidth = r * 0.7; x.lineCap = 'round'; x.beginPath(); for (let k = 0; k <= 8; k++) { const ex = k * r * 0.5, ey = Math.sin(t * 8 + k) * r * 0.4; k ? x.lineTo(ex, ey) : x.moveTo(ex, ey); } x.stroke(); x.fillStyle = '#111'; x.beginPath(); x.arc(-r * 0.05, -r * 0.1, r * 0.12, 0, 7); x.fill(); }
+  if (hpf < 1) { x.fillStyle = '#300'; x.fillRect(-r, -r - 10 * u, r * 2, 4 * u); x.fillStyle = '#ff5a5a'; x.fillRect(-r, -r - 10 * u, r * 2 * Math.max(0, hpf), 4 * u); }
+  x.restore();
+}
+function sbDrawBoss(x, b, t, u) {
+  x.save(); x.translate(b.x, b.y); const f = b.fl > 0;
+  x.strokeStyle = f ? '#fff' : '#9a4ad8'; x.lineCap = 'round';
+  for (let k = 0; k < 8; k++) { x.lineWidth = (14 - k) * u; x.beginPath(); x.moveTo(-40 * u, (k - 3.5) * 14 * u); for (let s = 1; s <= 6; s++) x.lineTo(-40 * u - s * 32 * u, (k - 3.5) * 14 * u + Math.sin(t * 3 + k + s * 0.8) * 22 * u); x.stroke(); }
+  x.fillStyle = f ? '#fff' : '#9a4ad8'; x.beginPath(); x.ellipse(40 * u, 0, 110 * u, 70 * u, 0, 0, 7); x.fill();
+  x.fillStyle = '#fff'; x.beginPath(); x.arc(-20 * u, -20 * u, 22 * u, 0, 7); x.fill(); x.fillStyle = '#111'; x.beginPath(); x.arc(-26 * u, -18 * u, 11 * u, 0, 7); x.fill();
+  x.fillStyle = '#300'; x.fillRect(-60 * u, -100 * u, 200 * u, 10 * u); x.fillStyle = '#ff5a5a'; x.fillRect(-60 * u, -100 * u, 200 * u * Math.max(0, b.hp / b.hpMax), 10 * u);
+  x.restore();
+}
+function sbHud() {
+  if (!SB.hud) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:6;background:rgba(10,20,40,.8);border:1px solid rgba(58,200,255,.6);border-radius:14px;padding:6px 14px;font:700 14px system-ui;color:#fff;pointer-events:none;text-align:center;min-width:320px'; document.body.appendChild(d); SB.hud = d; }
+  SB.hud.hidden = false; const pct = SB.dist / 500 * 100;
+  SB.hud.innerHTML = `🚢 <b>${Math.floor(SB.dist)} / 500 m</b> · ❤️ ${'♥'.repeat(Math.max(0, SB.hearts))} · 💧 ${Math.round(SB.water * 100)}% · 🕳 ${SB.holes.length}${SB.torT > 0 ? ` · 🚀 ${Math.ceil(SB.torT)} s` : ' · 🚀 ' + sbL('paruošta', 'ready')}<div style="margin-top:4px;height:8px;background:#123;border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#3ac8ff,#ffd23a)"></div></div>`;
+}
+fx.push(() => { if (mode !== 'sub') { if (SB.hud) SB.hud.hidden = true; if (SB.cv && !SB.cv.hidden) SB.cv.hidden = true; } return true; });
+// ---------- the yellow submarine at the edge of the Starting City square ----------
+const SUB_SPOT = (() => { const a = 4.85; return cityDir(Math.cos(a) * 14, Math.sin(a) * 14); })();
+let subDock = null;
+function buildSubDock() {
+  if (subDock) return; const d = SUB_SPOT, g = new THREE.Group(); g.position.copy(surf(d)); orient(g, d, tangentToward(d, cityDir(0, 0))); world.add(g);
+  g.add(S(G.cyl, mat(0x2a7ad8, { roughness: 0.2 }), 2.4, 0.15, 2.4, 0, 0.08, 0));
+  const y = mat(0xffd23a), body = S(G.sph, y, 1.6, 0.75, 0.75, 0, 0.8, 0); g.add(body); body.rotation.y = Math.PI / 2;
+  g.add(S(G.box, y, 0.6, 0.55, 0.7, 0, 1.55, 0)); g.add(S(G.cyl, mat(0x5a5a6a), 0.07, 0.6, 0.07, 0.2, 2.0, 0));
+  for (const z of [-0.6, 0, 0.6]) g.add(S(G.sph, bmat(0x7ad8ff), 0.17, 0.17, 0.05, 0.62, 0.9, z * 0.8).rotateY(Math.PI / 2));
+  const s = makeSign(sbL('Povandeninis laivas', 'Submarine')); s.position.set(2.2, 0, 0.6); g.add(s);
+  linearize(g); subDock = g;
+}
+setTimeout(() => { try { buildSubDock(); } catch (e) { console.error(e); } }, 0);
+fx.push(() => {
+  if (!subDock || mode !== 'planet' || !started || card || cinema || transitioning) return true;
+  const d = player.pos.distanceTo(subDock.position); if (d < 4.5) setPrompt(sbL('<kbd>E</kbd> sėsti į povandeninį laivą – GILIOJI JŪRA 🌊', '<kbd>E</kbd> get in the submarine – THE DEEP SEA 🌊'));
+  return true;
+});
+addEventListener('keydown', e => {
+  if (e.code !== 'KeyE' || mode !== 'planet' || !subDock || !started || card || cinema || transitioning) return;
+  if (player.pos.distanceTo(subDock.position) < 4.5) { e.stopImmediatePropagation(); if (player.inCar) return; transitioning = true; tone(300, 0.6, { to: 120, type: 'sine', vol: 0.06 }); fadeTo(() => { transitioning = false; enterSub(); }); }
+}, true);
+setTimeout(() => { if (typeof PG_DEST !== 'undefined') PG_DEST.push({ name: sbL('Gilioji jūra', 'The Deep Sea'), icon: '🚢', go: () => enterSub() }); }, 0);
+// no portals, teleports or powers down here
+{ const _d = doTeleport; doTeleport = (...a) => { if (mode === 'sub') return; return _d(...a); }; }
 </script>
 </html>
