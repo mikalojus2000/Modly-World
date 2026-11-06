@@ -18821,7 +18821,7 @@ fx.push(() => {
 // Sea monsters attack: shoot them with the turret (left mouse) or a torpedo (right mouse). If a monster reaches the
 // hull, it BREAKS IN: a hole lets the water in and the monster runs at you inside the submarine.
 // Inside: A/D – walk, Space – hit the monster, E – fix a hole. W/S – submarine up/down. Checkpoints every 1 km (saved).
-// Bosses (no boss in the 1st km): 1950 m ROBOT SHARK, 2950 m DEMON OF THE DEEP. At 3 km – the sunken treasure!
+// Boss only in the 3rd km: 2950 m DEMON OF THE DEEP. When all holes are fixed, the pump throws the water out. At 3 km – the sunken treasure!
 const sbL = (lt, en) => EN ? en : lt;
 const SUB_SCENE = new THREE.Scene();
 const SB = { cv: null, ctx: null, hud: null, dist: 0, cp: 0, y: 0.45, vy: 0, mx: 0.5, hearts: 10, water: 0, holes: [], intr: [], mons: [], shots: [], fx: [], bubbles: [], km: 0,
@@ -18842,7 +18842,6 @@ const SB_TYPES = {
 };
 const SB_KM = [{ lt: 'lengvas', en: 'easy', spawn: 2.2, hp: 0.6, sp: 0.75, water: 0.5 }, { lt: 'sunkesnis', en: 'harder', spawn: 1.0, hp: 1.15, sp: 1.0 }, { lt: 'PATS SUNKIAUSIAS', en: 'THE HARDEST', spawn: 0.75, hp: 1.5, sp: 1.1 }];
 const SB_BOSSES = [
-  { at: 1950, kind: 'robot', hp: 55, lt: '🤖 ROBOTAS RYKLYS', en: '🤖 The ROBOT SHARK', minion: 'shark' },
   { at: 2950, kind: 'demon', hp: 85, lt: '😈 GELMIŲ DEMONAS', en: '😈 The DEMON OF THE DEEP', minion: 'demon' },
 ];
 const sbFmt = m => m < 1000 ? Math.floor(m) + ' m' : (m / 1000).toFixed(2).replace(/0$/, '') + ' km';
@@ -18969,7 +18968,9 @@ function updateSub(dt, t) {
     if (SB.boss && !SB.boss.dead && SB.boss.hp <= 0) { const BK = SB_BOSSES[SB.bossNext] || SB_BOSSES[0]; SB.boss.dead = true; SB.bossNext++; const bk = SB.boss; setTimeout(() => { if (SB.boss === bk) SB.boss = null; }, 100); SB.fx.push({ x: SB.boss.x, y: SB.boss.y, t: 0, r: 220 * g.u }); bigBanner(sbL(`${BK.lt} NUGALĖTAS!`, `${BK.en} DEFEATED!`), sbL('Kelias laisvas – plauk toliau!', 'The way is free – sail on!')); }
     // inside: monsters run at you, water comes in
     for (const m of SB.intr) { m.fl = Math.max(0, m.fl - dt); const d = SB.mx - m.x; if (Math.abs(d) > 0.035) m.x += Math.sign(d) * 0.22 * dt; else { m.bite = (m.bite || 0) - dt; if (m.bite <= 0) { m.bite = 1.4; SB.hearts--; redFlash('rgba(255,40,40,.35)', 200); tone(160, 0.15, { to: 90, type: 'square', vol: 0.05, lp: 900 }); } } }
-    SB.water = clamp(SB.water + (SB.holes.length ? SB.holes.length * 0.02 * (SB.dist < 1000 ? 0.5 : 1) : -0.03) * dt, 0, 1);
+    const pumping = !SB.holes.length && SB.water > 0; if (pumping && !SB.pumpOn) { SB.pumpOn = true; sbMsg(sbL('🔧 Skylės užtaisytos – vanduo išbėga!', '🔧 Holes fixed – the water is pumped out!')); } if (!pumping) SB.pumpOn = false;
+    if (pumping && Math.random() < dt * 6) tone(rr(200, 260), 0.08, { type: 'sine', vol: 0.02, lp: 800 });
+    SB.water = clamp(SB.water + (SB.holes.length ? SB.holes.length * 0.02 * (SB.dist < 1000 ? 0.5 : 1) : -0.14) * dt, 0, 1);
     if (SB.water >= 1) sbLose(sbL('Laivas prisipildė vandens', 'The submarine filled with water'));
     if (SB.hearts <= 0) sbLose(sbL('Monstrai tave nugalėjo', 'The monsters beat you'));
   }
@@ -19014,6 +19015,9 @@ function sbDraw(g, t) {
   for (let i = 0; i < 4; i++) { const wx = ix0 + (i + 0.5) * (ix1 - ix0) / 4; x.fillStyle = '#7ad8ff'; x.beginPath(); x.arc(wx, iy0 + 20 * u, 10 * u, 0, 7); x.fill(); x.strokeStyle = '#b08a10'; x.lineWidth = 3 * u; x.stroke(); }
   // water inside
   if (SB.water > 0) { const wh = (iy1 - iy0) * SB.water; x.fillStyle = 'rgba(40,140,255,.55)'; x.fillRect(ix0, iy1 - wh, ix1 - ix0, wh); }
+  // the pump throws the water out at the back (when every hole is fixed)
+  if (SB.pumpOn && SB.water > 0) { x.fillStyle = 'rgba(120,200,255,.8)'; for (let k = 0; k < 10; k++) { const ph = (t * 3 + k / 10) % 1; x.beginPath(); x.arc(sx - rx * 0.95 - ph * 90 * u, sy + ry * 0.35 + Math.sin(ph * 6 + k) * 6 * u + ph * ph * 40 * u, (5 - ph * 3) * u, 0, 7); x.fill(); }
+    x.fillStyle = '#9aff7a'; x.font = `bold ${13 * u}px system-ui`; x.fillText(sbL('💨 siurblys', '💨 pump'), ix0 + 6 * u, iy1 - 14 * u); }
   // holes
   for (const h of SB.holes) { const hx = ix0 + h.x * (ix1 - ix0); x.strokeStyle = '#111'; x.lineWidth = 3 * u; x.beginPath(); x.moveTo(hx - 12 * u, iy0 + 40 * u); x.lineTo(hx - 2 * u, iy0 + 52 * u); x.lineTo(hx + 8 * u, iy0 + 38 * u); x.lineTo(hx + 14 * u, iy0 + 56 * u); x.stroke();
     x.fillStyle = 'rgba(80,180,255,.8)'; for (let k = 0; k < 3; k++) { const dy = ((t * 120 + k * 30) % 60) * u; x.beginPath(); x.arc(hx + (k - 1) * 4 * u, iy0 + 56 * u + dy, 3 * u, 0, 7); x.fill(); }
