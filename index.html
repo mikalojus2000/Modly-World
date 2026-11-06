@@ -18816,7 +18816,7 @@ fx.push(() => {
 
 // ================= THE DEEP SEA 🌊 – a 2D submarine journey of 3 km =================
 // 1st km – easy, 2nd km – harder, 3rd km – the hardest. Not only sea animals: zombie divers, ghosts, robot drones
-// and little demons too. 10 hearts. A boss at the end of every kilometre.
+// and little demons too. 30 HP.
 // Go to the yellow submarine at the edge of the Starting City square (E). Your submarine dives and sails 3 km.
 // Sea monsters attack: shoot them with the turret (left mouse) or a torpedo (right mouse). If a monster reaches the
 // hull, it BREAKS IN: a hole lets the water in and the monster runs at you inside the submarine.
@@ -18824,7 +18824,7 @@ fx.push(() => {
 // Boss only in the 3rd km: 2950 m DEMON OF THE DEEP. When all holes are fixed, the pump throws the water out. At 3 km – the sunken treasure!
 const sbL = (lt, en) => EN ? en : lt;
 const SUB_SCENE = new THREE.Scene();
-const SB = { cv: null, ctx: null, hud: null, dist: 0, cp: 0, y: 0.45, vy: 0, mx: 0.5, hearts: 10, water: 0, holes: [], intr: [], mons: [], shots: [], fx: [], bubbles: [], km: 0,
+const SB = { cv: null, ctx: null, hud: null, dist: 0, cp: 0, y: 0.45, vy: 0, mx: 0.5, hearts: 30, water: 0, holes: [], intr: [], mons: [], shots: [], fx: [], bubbles: [], km: 0,
   spawnT: 1.5, gunT: 0, torT: 0, hitT: 0, biteT: 0, aimX: 0.75, aimY: 0.4, boss: null, bossDone: false, over: false, won: false, t: 0, shake: 0, prevE: false, prevSp: false, msg: '', msgT: 0 };
 let SUBQ = { done: false, best: 0 }; try { const s = JSON.parse(localStorage.getItem('modly-sub') || 'null'); if (s) SUBQ = Object.assign(SUBQ, s); } catch (_) { }
 function saveSub() { try { localStorage.setItem('modly-sub', JSON.stringify(SUBQ)); } catch (_) { } }
@@ -18860,7 +18860,7 @@ function enterSub() {
   setTimeout(() => toast(sbL('🌊 GILIOJI JŪRA', '🌊 THE DEEP SEA'), sbL('Kairysis pelės – patranka · dešinysis – torpeda · W/S – aukštyn/žemyn · Viduje: A/D – eiti, Space – mušti, E – taisyti skylę · Q – namo', 'Left mouse – turret · right – torpedo · W/S – up/down · Inside: A/D – walk, Space – hit, E – fix a hole · Q – home'), '#3ac8ff'), 500);
 }
 function sbReset(cp) {
-  Object.assign(SB, { dist: cp, y: 0.45, vy: 0, mx: 0.5, hearts: 10, water: 0, holes: [], intr: [], mons: [], shots: [], fx: [], spawnT: 2, km: Math.min(2, Math.floor(cp / 1000)), gunT: 0, torT: 0, boss: null, over: false, won: false, shake: 0 });
+  Object.assign(SB, { dist: cp, y: 0.45, vy: 0, mx: 0.5, hearts: 30, water: 0, holes: [], intr: [], mons: [], shots: [], fx: [], spawnT: 2, km: Math.min(2, Math.floor(cp / 1000)), gunT: 0, torT: 0, boss: null, over: false, won: false, shake: 0 });
   SB.bossNext = SB_BOSSES.findIndex(b => b.at > cp); if (SB.bossNext < 0) SB.bossNext = SB_BOSSES.length;
 }
 function leaveSub(msg) {
@@ -19080,7 +19080,7 @@ function sbDrawBoss(x, b, t, u) {
 function sbHud() {
   if (!SB.hud) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:6;background:rgba(10,20,40,.8);border:1px solid rgba(58,200,255,.6);border-radius:14px;padding:6px 14px;font:700 14px system-ui;color:#fff;pointer-events:none;text-align:center;min-width:320px'; document.body.appendChild(d); SB.hud = d; }
   SB.hud.hidden = false; const pct = SB.dist / 3000 * 100, KM = SB_KM[Math.min(2, Math.floor(SB.dist / 1000))];
-  SB.hud.innerHTML = `🚢 <b>${sbFmt(SB.dist)} / 3 km</b> <span style="color:${['#9aff7a', '#ffb84a', '#ff5a5a'][SB_KM.indexOf(KM)]}">(${SB_KM.indexOf(KM) + 1} km – ${sbL(KM.lt, KM.en)})</span> · ❤️ <b>${Math.max(0, SB.hearts)}/10</b> · 💧 ${Math.round(SB.water * 100)}% · 🕳 ${SB.holes.length}${SB.torT > 0 ? ` · 🚀 ${Math.ceil(SB.torT)} s` : ' · 🚀 ' + sbL('paruošta', 'ready')}<div style="margin-top:4px;height:8px;background:#123;border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#3ac8ff,#ffd23a)"></div></div>`;
+  SB.hud.innerHTML = `🚢 <b>${sbFmt(SB.dist)} / 3 km</b> <span style="color:${['#9aff7a', '#ffb84a', '#ff5a5a'][SB_KM.indexOf(KM)]}">(${SB_KM.indexOf(KM) + 1} km – ${sbL(KM.lt, KM.en)})</span> · ❤️ <b>${Math.max(0, SB.hearts)}/30</b> · 💧 ${Math.round(SB.water * 100)}% · 🕳 ${SB.holes.length}${SB.torT > 0 ? ` · 🚀 ${Math.ceil(SB.torT)} s` : ' · 🚀 ' + sbL('paruošta', 'ready')}<div style="margin-top:4px;height:8px;background:#123;border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#3ac8ff,#ffd23a)"></div></div>`;
 }
 fx.push(() => { if (mode !== 'sub') { if (SB.hud) SB.hud.hidden = true; if (SB.cv && !SB.cv.hidden) SB.cv.hidden = true; } return true; });
 // ---------- the yellow submarine at the edge of the Starting City square ----------
