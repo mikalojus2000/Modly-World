@@ -18692,5 +18692,44 @@ const DISCORD_URL = 'https://discord.gg/DqBWdY3jqs';
       d.innerHTML = `<a id="pmDiscord" class="btn" href="${DISCORD_URL}" target="_blank" rel="noopener" style="background:#5865F2;color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px"><svg width="22" height="17" viewBox="0 0 71 55" fill="#fff" aria-hidden="true"><path d="M60.1 4.9A58.5 58.5 0 0 0 45.6.4a40 40 0 0 0-1.9 3.8 54 54 0 0 0-16.2 0A40 40 0 0 0 25.7.4 58.4 58.4 0 0 0 11.1 4.9C1.9 18.6-.6 32 .6 45.2a58.9 58.9 0 0 0 17.9 9 43 43 0 0 0 3.8-6.2 38 38 0 0 1-6-2.9l1.5-1.1a42 42 0 0 0 35.9 0l1.5 1.1a38 38 0 0 1-6 2.9 43 43 0 0 0 3.8 6.2 58.7 58.7 0 0 0 17.9-9c1.4-15.3-2.5-28.6-10.8-40.3ZM23.7 37.1c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2 6.5 3.3 6.4 7.2c0 4-2.8 7.2-6.4 7.2Zm23.6 0c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2 6.5 3.3 6.4 7.2c0 4-2.8 7.2-6.4 7.2Z"/></svg>${EN ? 'Join our Discord' : 'Prisijunk prie Discord'}</a>`;
       top.after(d); d.querySelector('a').addEventListener('click', e => e.stopPropagation()); } } catch (e) { console.error(e); }
     return r; }; }
+
+// ================= Come back EXACTLY where you left (any world, even if you just close the tab) =================
+const RS_ENTER = { star: () => enterStar(), wind: () => enterWind(), thunder: () => enterThunder(), time: () => enterTime(), sun: () => enterSun(), sea: () => enterSea(),
+  mine: () => enterMine(), future: () => enterFuture(), candy: () => enterCandy(), rainbow: () => enterRainbow(), cave: () => enterCave(), museum: () => enterMuseum(),
+  mars: () => enterMars(), kitchen: () => enterKitchen(), stone: () => enterStone(), upside: () => enterUpside(), pk: () => enterPark(), sanctum: () => enterSanctum() };
+const RS = { t: 0, restoring: false };
+function rsSave() {
+  try {
+    if (!started || RS.restoring || mode === 'attract' || cinema || transitioning) return;
+    if (mode !== 'planet' && !RS_ENTER[mode]) return;   // a fight, a race, a cinema… – keep the last safe place
+    const e = mode === 'planet' && player.inCar && ride ? ride : player;
+    localStorage.setItem('modly-where', JSON.stringify({ m: mode, p: e.pos.toArray(), u: player.up.toArray(), f: (e.fwd || player.fwd).toArray() }));
+    if (mode === 'planet') localStorage.setItem('modly-pos', JSON.stringify({ p: e.pos.toArray(), f: (e.fwd || player.fwd).toArray() }));
+  } catch (_) { }
+}
+fx.push(dt => { RS.t -= dt; if (RS.t <= 0) { RS.t = 1.5; rsSave(); } return true; });
+addEventListener('pagehide', rsSave); addEventListener('beforeunload', rsSave);
+// "Save and quit" also remembers the world you are in
+{ const _s = savePlayerSpot; savePlayerSpot = (...a) => { const r = _s(...a); rsSave(); return r; }; }
+// when the place is wiped (new journey, language change, a friend's world…), forget it too
+{ const _rm = Storage.prototype.removeItem; Storage.prototype.removeItem = function (k) { const r = _rm.call(this, k); if (k === 'modly-pos' && this === window.localStorage && !RS.restoring && (!(typeof started !== 'undefined' && started) || (typeof MPW !== 'undefined' && MPW.applying))) _rm.call(this, 'modly-where'); return r; }; }
+{ const _st = startGame; startGame = (...a) => {
+    let w = null; try { w = JSON.parse(localStorage.getItem('modly-where') || 'null'); } catch (_) { }
+    const r = _st(...a);
+    if (!w || !w.m || mode !== 'planet') return r;
+    if (w.m === 'planet') {   // on the big planet: exactly that spot
+      try { const p = new V3().fromArray(w.p), d = p.clone().normalize(); player.pos.copy(d).multiplyScalar(Math.max(p.length(), R + groundH(d) + 0.3)); player.up.copy(d); player.fwd.fromArray(w.f).projectOnPlane(d).normalize(); if (player.fwd.lengthSq() < 0.5) player.fwd.copy(tangentToward(d, UP)); camera.position.copy(player.pos).addScaledVector(d, 4).addScaledVector(player.fwd, -6); } catch (e) { console.error(e); }
+      return r; }
+    const go = RS_ENTER[w.m]; if (!go) return r;
+    RS.restoring = true;
+    setTimeout(() => {
+      try { hideCard(); go(); } catch (e) { console.error(e); RS.restoring = false; return; }
+      let n = 0; const tick = setInterval(() => { n++;
+        if (mode === w.m && !transitioning) { clearInterval(tick);
+          try { player.pos.fromArray(w.p); if (w.u) player.up.fromArray(w.u); player.fwd.fromArray(w.f); player.vel && player.vel.set(0, 0, 0); player.vr = 0; player.mesh.position.copy(player.pos); } catch (e) { console.error(e); }
+          RS.restoring = false; toast(EN ? 'Welcome back!' : 'Sveikas sugrįžęs!', EN ? 'You are where you left. Esc – menu' : 'Esi ten, kur išėjai. Esc – meniu', '#7dff6b'); }
+        else if (n > 60) { clearInterval(tick); RS.restoring = false; } }, 100);
+    }, 400);
+    return r; }; }
 </script>
 </html>
