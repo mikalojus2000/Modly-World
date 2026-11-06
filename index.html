@@ -18038,6 +18038,8 @@ const GIFTS = [
   { id: 'vytisra1-1', to: 'vytisra1', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, note: 'VISKAS, KAS ĮMANOMA! Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'EVERYTHING POSSIBLE! All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
   { id: 'wwww-1', to: 'wwww', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, note: 'VISKAS, KAS ĮMANOMA! Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'EVERYTHING POSSIBLE! All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
   { id: 'vytisra2-1', to: 'vytisra2', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, note: 'VISKAS, KAS ĮMANOMA! Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'EVERYTHING POSSIBLE! All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
+  { id: 'lll-1', to: 'lll', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, all: true, note: 'VISAS ŽAIDIMAS PEREITAS! Visi įsakymai įvykdyti. Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'THE WHOLE GAME IS FINISHED! All commands done. All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
+  { id: 'l l l-1', to: 'l l l', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, all: true, note: 'VISAS ŽAIDIMAS PEREITAS! Visi įsakymai įvykdyti. Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'THE WHOLE GAME IS FINISHED! All commands done. All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
   // { id: 'g1', to: 'vardas', money: 10000, cars: ['rocket'], skins: ['king'], pets: ['unicorn'], backs: ['wings'], note: 'Ačiū, kad žaidi!' },
 ];
 function giftApply(g) {
@@ -18062,6 +18064,13 @@ fx.push(() => {
   // "almost finished the game": every Star Goddess command done (powers 1–4, the Great Bat beaten) → straight to Mama Dinosaur's tea
   if (g.tea) setTimeout(() => { try { hideCard(); if (typeof batTest === 'function') batTest(2); Q29.stage = 'done'; saveQ29(); TEA.invited = true; localStorage.setItem('modly-teainv', '1');
     if (GOD.stage === 'void') { GOD.stage = 'none'; GOD.lights = []; saveGod(); } transitioning = true; fadeTo(() => { transitioning = false; cinema = null; enterTea(); }); } catch (e) { console.error(e); } }, 3500);
+  // "the whole game": every command / mission is marked as done
+  if (g.all) { try { QUEST.stage = 'done'; QUEST.delivered = [0, 1, 2, 3, 4, 5, 6]; saveQuest();
+      for (let n = 2; n <= 24; n++) { let Q = null, sv = null; try { Q = eval(`typeof Q${n} !== 'undefined' ? Q${n} : null`); sv = eval(`typeof saveQ${n} === 'function' ? saveQ${n} : null`); } catch (_) { }
+        if (!Q || !('stage' in Q)) continue; Q.stage = 'done'; if (sv) sv(); else try { localStorage.setItem('modly-quest' + n, JSON.stringify(Q)); } catch (_) { } }
+      if (typeof phoneRead !== 'undefined') { phoneRead = true; try { localStorage.setItem('modly-phone-read', '1'); } catch (_) { } }
+      for (const f of ['refreshDemonQuest', 'refreshSpaceRamp', 'refreshGodPhone', 'refreshSeaGate', 'refreshChecklist']) { try { const fn = eval(`typeof ${f} === 'function' ? ${f} : null`); if (fn) fn(); } catch (_) { } }
+    } catch (e) { console.error(e); } }
   // "everything possible": all Star Goddess powers (1–5), the game finished, a GOD with an own planet, the Family already beaten
   if (g.max) setTimeout(() => { try { hideCard(); if (typeof batTest === 'function') batTest(2); Q29.stage = 'done'; saveQ29(); TEA.invited = true; localStorage.setItem('modly-teainv', '1');
     GOD.stage = 'god'; GOD.lights = [0, 1, 2, 3, 4]; saveGod(); if (typeof FAM !== 'undefined') { FAM.stage = 'won'; saveFam(); } if (typeof gateKeyRow === 'function') gateKeyRow(); if (typeof godHalo === 'function') godHalo();
