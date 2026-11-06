@@ -18731,5 +18731,64 @@ addEventListener('pagehide', rsSave); addEventListener('beforeunload', rsSave);
         else if (n > 60) { clearInterval(tick); RS.restoring = false; } }, 100);
     }, 400);
     return r; }; }
+
+// ================= AFK mode at the God of Thunder 💤 =================
+// Press O (or U if O is your fireball key) on the Thunder planet or while digging: the little man keeps working by
+// himself, but slower – every 20 seconds one drought plug is blown up, every minute a gem is found. Any move key stops it.
+const AFK = { on: false, plugAt: 0, gemAt: 0, el: null, plugs: 0, gems: 0, money: 0 };
+const afkL = (lt, en) => EN ? en : lt;
+const AFK_PLUG = 20000, AFK_GEM = 60000;
+const afkKey = () => (typeof Q25 !== 'undefined' && Q25.key === 'KeyO') ? 'KeyU' : 'KeyO';
+const afkHere = () => started && (mode === 'thunder' || mode === 'dig') && typeof Q21 !== 'undefined' && Q21.stage === 'dig';
+function afkStart() {
+  if (!afkHere()) { if (started && (mode === 'thunder' || mode === 'dig')) toast(afkL('💤 AFK dar negalima', '💤 AFK not yet'), Q21.stage === 'done' ? afkL('Visi kamščiai jau susprogdinti!', 'All plugs are already blown up!') : afkL('Pirmiausia gauk Griaustinio Dievo užduotį ir kastuvą', 'First get the Thunder God’s job and a shovel'), '#c8b0ff'); return; }
+  const now = Date.now(); AFK.on = true; AFK.plugAt = now + AFK_PLUG; AFK.gemAt = now + AFK_GEM; AFK.plugs = 0; AFK.gems = 0; AFK.money = 0;
+  for (const k in keys) keys[k] = false;
+  [392, 330, 262].forEach((f, i) => tone(f, 0.25, { type: 'triangle', vol: 0.05, when: i * 0.12 }));
+  toast(afkL('💤 AFK režimas įjungtas', '💤 AFK mode on'), afkL('Žmogeliukas dirba pats, bet lėčiau: kas 20 s – kamštis, kas 1 min – brangakmenis. Judėk arba spausk ', 'The little man works by himself, but slower: every 20 s a plug, every 1 min a gem. Move or press ') + keyLabel(afkKey()) + afkL(' – išjungti', ' to stop'), '#c8b0ff');
+}
+function afkStop(why) {
+  if (!AFK.on) return; AFK.on = false;
+  toast(afkL('⏰ AFK baigtas', '⏰ AFK over'), afkL(`Kol nebuvai: kamščių ${AFK.plugs}, brangakmenių ${AFK.gems} (+${AFK.money} €)`, `While you were away: ${AFK.plugs} plugs, ${AFK.gems} gems (+${AFK.money} €)`) + (why ? ' · ' + why : ''), '#c8b0ff');
+}
+function afkPlug() {
+  let L = 1; while (L <= NLAYERS && Q21.blown.includes(L)) L++; if (L > NLAYERS) return false;
+  Q21.blown.push(L); AFK.plugs++; saveQ21();
+  noiseHit(0.5, { f: 600, fto: 60, vol: 0.15 }); tone(80, 0.4, { to: 40, type: 'sawtooth', vol: 0.06, lp: 500 });
+  if (mode === 'dig') digMsg(afkL(`💤 AFK: kamštis susprogdintas! ${Q21.blown.length}/100`, `💤 AFK: plug blown up! ${Q21.blown.length}/100`));
+  if (Q21.blown.length >= NLAYERS) { afkStop(); finishDig(); }
+  return true;
+}
+function afkGem() {
+  const deep = Math.floor(Math.max(Q21.best || 0, Q21.y || 0) / 500), v = 5 + Math.floor(Math.random() * 6) * 5 + deep * 5;
+  addMoney(v); Q21.gems = (Q21.gems || 0) + 1; AFK.gems++; AFK.money += v; saveQ21();
+  tone(1320, 0.1, { type: 'triangle', vol: 0.05 }); tone(1760, 0.12, { type: 'triangle', vol: 0.04, when: 0.08 });
+  if (mode === 'dig') digMsg(afkL(`💤 AFK: brangakmenis! +${v} €`, `💤 AFK: gem! +${v} €`));
+}
+// the clock (works with real time, so it keeps counting even if the tab sleeps a little)
+setInterval(() => {
+  if (!AFK.on) return; if (!afkHere()) { afkStop(); return; }
+  const now = Date.now(); let n = 0;
+  while (AFK.on && now >= AFK.plugAt && n++ < 500) { AFK.plugAt += AFK_PLUG; if (!afkPlug()) break; }
+  n = 0; while (AFK.on && now >= AFK.gemAt && n++ < 500) { AFK.gemAt += AFK_GEM; afkGem(); }
+}, 1000);
+// keys: O/U toggles, moving stops it
+addEventListener('keydown', e => {
+  if (!started || card) return;
+  if (e.code === afkKey() && !e.repeat && (mode === 'thunder' || mode === 'dig')) { e.stopImmediatePropagation(); e.preventDefault(); if (AFK.on) afkStop(); else afkStart(); return; }
+  if (AFK.on && ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyF', 'KeyE', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) afkStop();
+}, true);
+// the sign on the screen
+fx.push(() => {
+  const show = started && (mode === 'thunder' || mode === 'dig') && typeof Q21 !== 'undefined' && Q21.stage === 'dig' && !cinema;
+  if (!AFK.el) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;right:14px;bottom:72px;z-index:7;background:rgba(30,20,50,.85);border:1px solid rgba(200,176,255,.6);border-radius:14px;padding:8px 12px;font:700 13px system-ui;color:#fff;pointer-events:none;text-align:center;max-width:210px'; document.body.appendChild(d); AFK.el = d; }
+  AFK.el.hidden = !show; if (!show) return true;
+  const k = keyLabel(afkKey()), now = Date.now();
+  const html = AFK.on
+    ? `<div style="font-size:22px">💤</div><b style="color:#c8b0ff">AFK</b><br>${afkL('kamštis po', 'plug in')} <b>${Math.max(0, Math.ceil((AFK.plugAt - now) / 1000))} s</b><br>${afkL('brangakmenis po', 'gem in')} <b>${Math.max(0, Math.ceil((AFK.gemAt - now) / 1000))} s</b><br><span style="opacity:.75">${afkL('Kamščių', 'Plugs')}: ${Q21.blown.length}/100</span><br><small style="opacity:.7">${k} – ${afkL('išjungti', 'stop')}</small>`
+    : `💤 <kbd style="background:#fff;color:#222;border-radius:4px;padding:0 5px">${k}</kbd> AFK`;
+  if (AFK.el.innerHTML !== html) AFK.el.innerHTML = html;
+  return true;
+});
 </script>
 </html>
