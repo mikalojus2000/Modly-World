@@ -8995,7 +8995,7 @@ const CONTROLS = [
   ['E', (EN?"talk, look, use":'kalbėtis, apžiūrėti, naudoti')], [(EN?"Left / right mouse btn.":'Kairys / dešinys pelės mygt.'), (EN?"reach out: grab, throw, hold on, shoot":'ištiesti ranką: paimti, mesti, įsikibti, šauti')],
   ['R', (EN?"get in the car / on the pig":'sėsti į mašiną / ant kiaulės')], ['F', (EN?"call the car or pig":'iškviesti mašiną ar kiaulę')], ['I', (EN?"my animals":'mano gyvūnai')], ['P', (EN?"phone (once you find it)":'telefonas (kai jį rasi)')], ['T', (EN?"throw a stick":'mesti pagaliuką')],
   ['V', (EN?"look at yourself from the front":'pažiūrėti į save iš priekio')], ['X', (EN?"costume shop (anywhere) · release animal / demolish house":'kostiumų parduotuvė (bet kur) · paleisti gyvūną / nugriauti namą')], ['Q', (EN?"rotate the house or furniture you're placing":'pasukti statomą namą ar baldą')], ['B', (EN?"furniture (at home)":'baldai (namuose)')],
-  ['M', (EN?"sound on/off":'garsas įj./išj.')], ['G', (EN?"graphics quality":'grafikos kokybė')], ['H', (EN?"hide the key panel":'slėpti klavišų lentelę')], ['`', (EN?"test world commands":'bandymų pasaulio komandos')], ['Esc', (EN?"this menu":'šis meniu')]
+  ['M', (EN?"sound on/off":'garsas įj./išj.')], ['G', (EN?"achievements 🏆":'pasiekimai 🏆')], ['H', (EN?"hide the key panel":'slėpti klavišų lentelę')], ['`', (EN?"test world commands":'bandymų pasaulio komandos')], ['Esc', (EN?"this menu":'šis meniu')]
 ];
 function buildPauseMenu() {
   const el = $('paused');
@@ -19108,5 +19108,99 @@ addEventListener('keydown', e => {
 setTimeout(() => { if (typeof PG_DEST !== 'undefined') PG_DEST.push({ name: sbL('Gilioji jūra', 'The Deep Sea'), icon: '🚢', go: () => enterSub() }); }, 0);
 // no portals, teleports or powers down here
 { const _d = doTeleport; doTeleport = (...a) => { if (mode === 'sub') return; return _d(...a); }; }
+
+// ================= ACHIEVEMENTS 🏆 – press G =================
+// Every account has its own list (saved in modly-ach). They are checked every second; a new one shows a golden banner.
+const achL = (lt, en) => EN ? en : lt;
+const AC_SHOP_SKINS = ['classic', 'cap', 'cat', 'chef', 'cowboy', 'pirate', 'ninja', 'dino', 'knight', 'robot', 'astronaut', 'king'];
+const acQ = n => { try { return eval(`typeof Q${n} !== 'undefined' ? Q${n} : null`); } catch (_) { return null; } };
+const acDone = n => { const q = acQ(n); return !!q && q.stage === 'done'; };
+const ACH = [
+  // ---- the ones Justas thought of ----
+  { id: 'p1', ic: '🌍', lt: '1 planeta', en: 'Planet 1', dlt: 'Įvykdyk visus Kūrėjo įsakymus ir keliauk toliau', den: 'Finish all the Creator’s commands and go further', ok: () => acDone(14) },
+  { id: 'p2', ic: '🌊', lt: '2 planeta', en: 'Planet 2', dlt: 'Padėk Jūrų Dievui', den: 'Help the Sea God', ok: () => acDone(16) },
+  { id: 'p3', ic: '☀️', lt: '3 planeta', en: 'Planet 3', dlt: 'Laimėk vaiduoklių karą Saulėje', den: 'Win the ghost war on the Sun', ok: () => acDone(17) },
+  { id: 'p4', ic: '⏰', lt: '4 planeta', en: 'Planet 4', dlt: 'Sutaisyk Didįjį Praeities Laikrodį', den: 'Fix the Great Past Clock', ok: () => acDone(18) },
+  { id: 'p5', ic: '⛈️', lt: '5 planeta', en: 'Planet 5', dlt: 'Susprogdink visus 100 kamščių pas Griaustinio Dievą', den: 'Blow up all 100 plugs at the God of Thunder', ok: () => acDone(21) },
+  { id: 'p6', ic: '🌪️', lt: '6 planeta', en: 'Planet 6', dlt: 'Sulėtink Vėjo planetos sukimąsi', den: 'Slow down the spinning of the Wind planet', ok: () => acDone(23) },
+  { id: 'p7', ic: '⭐', lt: '7 planeta', en: 'Planet 7', dlt: 'Įvykdyk visus 5 Žvaigždžių Dievės įsakymus', den: 'Finish all 5 commands of the Star Goddess', ok: () => acDone(29) },
+  { id: 'god', ic: '👑', lt: 'Tu – dievas', en: 'You are a god', dlt: 'Uždaryk Juodąją Tuštumą ir tapk DIEVU', den: 'Close the Black Void and become a GOD', ok: () => typeof GOD !== 'undefined' && GOD.stage === 'god' },
+  { id: 'sea2500', ic: '🚢', lt: '2500 m jūroje', en: '2500 m in the sea', dlt: 'Nuplauk povandeniniu laivu visus 2500 m iki lobio', den: 'Sail the submarine all 2500 m to the treasure', ok: () => typeof SUBQ !== 'undefined' && !!SUBQ.done3 },
+  { id: 'secret', ic: '🕵️', lt: 'Slaptas žmogus', en: 'Secret person', dlt: 'Gauk bent vieną slaptą kostiumą', den: 'Get at least one secret costume', ok: () => typeof skinOwned !== 'undefined' && skinOwned.some(id => !AC_SHOP_SKINS.includes(id)) },
+  { id: 'star', ic: '🌟', lt: 'Žvaigždė', en: 'The star', dlt: 'Parnešk žvaigždę iš kosmoso į muziejų', den: 'Bring a star from space to the museum', ok: () => typeof S15 !== 'undefined' && S15.stage === 'done' },
+  { id: 'clouds', ic: '☁️', lt: 'Virš debesų', en: 'Above the clouds', dlt: 'Išskrisk iš burbulo (2 ir 7 įsakymai nesiskaito)', den: 'Fly out of the bubble (commands 2 and 7 don’t count)', ok: () => !!ACV.flags.clouds },
+  // ---- more ----
+  { id: 'chicks', ic: '🐤', lt: 'Viščiukų gelbėtojas', en: 'Chick saver', dlt: 'Atnešk visus viščiukus vištai', den: 'Bring all the chicks to the hen', ok: () => typeof QUEST !== 'undefined' && QUEST.stage === 'done' },
+  { id: 'travel', ic: '🗺️', lt: 'Keliautojas', en: 'Traveller', dlt: 'Aplankyk visus 8 pirmosios planetos biomus', den: 'Visit all 8 biomes of the first planet', ok: () => typeof visited !== 'undefined' && visited.size >= 8 },
+  { id: 'money1', ic: '💶', lt: 'Pirmasis tūkstantis', en: 'The first thousand', dlt: 'Turėk 1000 €', den: 'Have 1000 €', ok: () => money >= 1000 },
+  { id: 'money2', ic: '💰', lt: 'Turtuolis', en: 'Rich', dlt: 'Turėk 50 000 €', den: 'Have 50 000 €', ok: () => money >= 50000 },
+  { id: 'cars5', ic: '🚗', lt: 'Vairuotojas', en: 'Driver', dlt: 'Turėk 5 mašinas', den: 'Own 5 cars', ok: () => typeof garage !== 'undefined' && garage.length >= 5 },
+  { id: 'carsAll', ic: '🏎️', lt: 'Visas garažas', en: 'The whole garage', dlt: 'Turėk visas mašinas', den: 'Own every car', ok: () => typeof garage !== 'undefined' && CARS.every(c => garage.includes(c.id)) },
+  { id: 'pets5', ic: '🐾', lt: 'Gyvūnų draugas', en: 'Animal friend', dlt: 'Turėk 5 gyvūnus', den: 'Have 5 pets', ok: () => typeof petBook !== 'undefined' && petBook.length >= 5 },
+  { id: 'skins10', ic: '👕', lt: 'Madingas', en: 'Fashionable', dlt: 'Turėk 10 kostiumų', den: 'Own 10 costumes', ok: () => typeof skinOwned !== 'undefined' && skinOwned.length >= 10 },
+  { id: 'wings', ic: '🪽', lt: 'Sparnuotas', en: 'With wings', dlt: 'Gauk sparnus', den: 'Get the wings', ok: () => typeof Q8 !== 'undefined' && Q8.owned && Q8.owned.includes('wings') },
+  { id: 'gems', ic: '💎', lt: 'Brangakmenių medžiotojas', en: 'Gem hunter', dlt: 'Rask 20 brangakmenių kasdamas', den: 'Find 20 gems while digging', ok: () => (acQ(21) || {}).gems >= 20 },
+  { id: 'family', ic: '👪', lt: 'Elementų nugalėtojas', en: 'Element champion', dlt: 'Nugalėk Elementų šeimą', den: 'Beat the Element Family', ok: () => typeof FAM !== 'undefined' && FAM.stage === 'won' },
+  { id: 'tea', ic: '🫖', lt: 'Arbatėlė', en: 'Tea time', dlt: 'Gauk kvietimą arbatos pas Mamą Dinozaurę', den: 'Get invited for tea with Mama Dinosaur', ok: () => typeof TEA !== 'undefined' && TEA.invited },
+  { id: 'build', ic: '🧱', lt: 'Statybininkas', en: 'Builder', dlt: 'Padėk 100 kaladėlių savo planetoje', den: 'Place 100 blocks on your planet', ok: () => typeof MN !== 'undefined' && (MN.cells.size >= 100 || (MN.saved || []).length >= 100) },
+  { id: 'folk', ic: '🧑‍🤝‍🧑', lt: 'Gyvybės kūrėjas', en: 'Life maker', dlt: 'Sukurk žmones savo planetai', den: 'Create people for your planet', ok: () => typeof FOLK !== 'undefined' && FOLK.made },
+  { id: 'parkour', ic: '🧗', lt: 'Parkūro meistras', en: 'Parkour master', dlt: 'Užlipk iki aukso taurės parkūro pasaulyje', den: 'Climb to the golden cup in the Parkour World', ok: () => typeof PKS !== 'undefined' && PKS.done },
+  { id: 'friends', ic: '🌐', lt: 'Kartu smagiau', en: 'Better together', dlt: 'Žaisk multiplayer su draugu', den: 'Play multiplayer with a friend', ok: () => !!ACV.flags.mp },
+  { id: 'afk', ic: '💤', lt: 'Miegalius', en: 'Sleepyhead', dlt: 'AFK režimu susprogdink kamštį', den: 'Blow up a plug in AFK mode', ok: () => !!ACV.flags.afk },
+];
+const ACV = { got: [], flags: {}, el: null, open: false };
+try { const s = JSON.parse(localStorage.getItem('modly-ach') || 'null'); if (s) { ACV.got = s.got || []; ACV.flags = s.flags || {}; } } catch (_) { }
+function acSave() { try { localStorage.setItem('modly-ach', JSON.stringify({ got: ACV.got, flags: ACV.flags })); } catch (_) { } }
+function acFlag(k) { if (!ACV.flags[k]) { ACV.flags[k] = true; acSave(); } }
+function acCheck(quiet) {
+  if (typeof started === 'undefined' || !started) return; const fresh = [];
+  for (const a of ACH) { if (ACV.got.includes(a.id)) continue; let ok = false; try { ok = !!a.ok(); } catch (_) { } if (ok) { ACV.got.push(a.id); fresh.push(a); } }
+  if (!fresh.length) return; acSave(); if (ACV.open) acRender();
+  if (quiet) return;
+  fresh.slice(0, 3).forEach((a, i) => setTimeout(() => { try { [784, 988, 1175, 1568].forEach((f, k) => tone(f, 0.2, { type: 'triangle', vol: 0.05, when: k * 0.08 })); acPop(a); } catch (_) { } }, i * 2600));
+}
+function acPop(a) {
+  const live = document.querySelectorAll('[data-achpop]').length; const d = document.createElement('div'); d.dataset.achpop = '1'; d.style.cssText = 'position:fixed;right:16px;top:' + (90 + live * 86) + 'px;z-index:30;background:linear-gradient(135deg,#3a2a00,#6a4a00);border:2px solid #ffd23a;border-radius:16px;padding:10px 16px;color:#fff;font:700 15px system-ui;box-shadow:0 6px 24px rgba(0,0,0,.5);display:flex;gap:10px;align-items:center;transform:translateX(120%);transition:transform .4s';
+  d.innerHTML = `<div style="font-size:34px">${a.ic}</div><div><div style="color:#ffd23a;font-size:12px">🏆 ${achL('PASIEKIMAS!', 'ACHIEVEMENT!')}</div><div>${achL(a.lt, a.en)}</div><div style="font-weight:500;font-size:12px;opacity:.8">${achL(a.dlt, a.den)}</div></div>`;
+  document.body.appendChild(d); requestAnimationFrame(() => { d.style.transform = 'translateX(0)'; }); setTimeout(() => { d.style.transform = 'translateX(130%)'; setTimeout(() => d.remove(), 500); }, 3600);
+}
+// the first check is quiet (things you already had before achievements existed come without a flood of banners)
+let acFirst = true;
+setInterval(() => { try { if (typeof started !== 'undefined' && started) { acCheck(acFirst); acFirst = false; } } catch (e) { console.error(e); } }, 1000);
+// "Above the clouds": out of the bubble on the first planet (not while doing command 2 or 7)
+fx.push(() => {
+  try { if (started && mode === 'planet' && player.pos.length() > R * 2.7 && !ACV.flags.clouds) { const c2 = typeof Q2 !== 'undefined' && (Q2.stage === 'rocket' || Q2.stage === 'horn'); const c7 = typeof Q7 !== 'undefined' && Q7.stage !== 'none' && Q7.stage !== 'done'; if (!c2 && !c7) acFlag('clouds'); }
+    if (typeof MP !== 'undefined' && MP.on && MP.n >= 2 && !ACV.flags.mp) acFlag('mp');
+    if (typeof AFK !== 'undefined' && AFK.plugs > 0 && !ACV.flags.afk) acFlag('afk'); } catch (_) { }
+  return true;
+});
+// ---------- the board ----------
+function acRender() {
+  if (!ACV.el) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;inset:0;z-index:25;background:rgba(8,10,24,.75);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box'; document.body.appendChild(d); ACV.el = d;
+    d.addEventListener('mousedown', e => { e.stopPropagation(); if (e.target === d) acClose(); }); }
+  const n = ACV.got.length, all = ACH.length;
+  ACV.el.innerHTML = `<div style="width:min(860px,100%);max-height:100%;overflow:auto;background:#1a1530;border:2px solid #ffd23a;border-radius:20px;padding:18px;color:#fff;font:600 14px system-ui;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><div style="font:400 32px 'Lilita One',system-ui;color:#ffd23a">🏆 ${achL('Pasiekimai', 'Achievements')}</div><div style="flex:1"></div><div style="font-size:18px"><b style="color:#ffd23a">${n}</b> / ${all}</div><button data-x style="border:none;border-radius:10px;padding:6px 12px;background:#ff6a5a;color:#fff;font:800 14px system-ui;cursor:pointer">✕ G</button></div>
+    <div style="height:10px;background:#2a2450;border-radius:6px;overflow:hidden;margin-bottom:14px"><div style="width:${n / all * 100}%;height:100%;background:linear-gradient(90deg,#ffd23a,#ff8a3a)"></div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">${ACH.map(a => { const g = ACV.got.includes(a.id); return `<div style="display:flex;gap:10px;align-items:center;padding:10px;border-radius:14px;background:${g ? 'linear-gradient(135deg,#4a3a08,#2a2a10)' : '#241f3a'};border:1px solid ${g ? '#ffd23a' : 'rgba(255,255,255,.12)'};opacity:${g ? 1 : 0.6}">
+      <div style="font-size:30px;filter:${g ? 'none' : 'grayscale(1)'}">${g ? a.ic : '🔒'}</div><div><div style="color:${g ? '#ffd23a' : '#fff'}">${achL(a.lt, a.en)}</div><div style="font-weight:500;font-size:12px;opacity:.8">${achL(a.dlt, a.den)}</div></div></div>`; }).join('')}</div></div>`;
+  ACV.el.querySelector('[data-x]').onclick = acClose;
+}
+function acOpen() { if (ACV.open) return; acCheck(true); ACV.open = true; acRender(); ACV.el.hidden = false; for (const k in keys) keys[k] = false; try { document.exitPointerLock && document.exitPointerLock(); } catch (_) { } tone(880, 0.1, { type: 'triangle', vol: 0.05 }); }
+function acClose() { ACV.open = false; if (ACV.el) ACV.el.hidden = true; if (started && !lockFailed) try { requestLock(); } catch (_) { } }
+function achToggle() { if (ACV.open) acClose(); else acOpen(); }
+// G opens the board (anywhere), Esc closes it; while it is open nothing else reacts to keys
+addEventListener('keydown', e => {
+  if (!started) return;
+  if (ACV.open) { e.stopImmediatePropagation(); e.preventDefault(); if ((e.code === 'KeyG' || e.code === 'Escape') && !e.repeat) acClose(); return; }
+  const typing = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
+  if (e.code === 'KeyG' && !e.repeat && !typing && !card && (typeof FK === 'undefined' || !FK.open)) { e.stopImmediatePropagation(); e.preventDefault(); acOpen(); }
+}, true);
+// the pause menu keeps the graphics switch; the key list now says G – achievements
+setTimeout(() => { try { document.querySelectorAll('#keys span').forEach(s => { if (/grafikos kokyb|graphics quality/.test(s.textContent)) s.textContent = achL('garsas / pasiekimai 🏆', 'sound / achievements 🏆'); }); } catch (_) { } }, 500);
+// the pause menu: an achievements button
+{ const _b = buildPauseMenu; buildPauseMenu = (...a) => { const r = _b(...a);
+    try { const top = document.querySelector('#paused .pauseBtns'); if (top && !document.getElementById('pmAch')) { const b = document.createElement('button'); b.id = 'pmAch'; b.className = 'btn'; b.type = 'button'; b.style.cssText = 'background:#ffd23a;color:#3a2a00'; b.textContent = '🏆 ' + achL('Pasiekimai (G)', 'Achievements (G)'); b.onclick = e => { e.stopPropagation(); closePause(false); acOpen(); }; top.appendChild(b); } } catch (e) { console.error(e); }
+    return r; }; }
 </script>
 </html>
