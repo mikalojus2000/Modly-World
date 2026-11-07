@@ -18814,14 +18814,14 @@ fx.push(() => {
   return true;
 });
 
-// ================= THE DEEP SEA 🌊 – a 2D submarine journey of 3 km =================
+// ================= THE DEEP SEA 🌊 – a 2D submarine journey of 2500 m =================
 // 1st km – easy, 2nd km – harder, 3rd km – the hardest. Not only sea animals: zombie divers, ghosts, robot drones
 // and little demons too. 30 HP.
-// Go to the yellow submarine at the edge of the Starting City square (E). Your submarine dives and sails 3 km.
+// Go to the yellow submarine at the edge of the Starting City square (E). Your submarine dives and sails 2500 m.
 // Sea monsters attack: shoot them with the turret (left mouse) or a torpedo (right mouse). If a monster reaches the
 // hull, it BREAKS IN: a hole lets the water in and the monster runs at you inside the submarine.
 // Inside: A/D – walk, Space – hit the monster, E – fix a hole. W/S – submarine up/down. Checkpoints every 1 km (saved).
-// Boss only in the 3rd km: 2950 m DEMON OF THE DEEP. When all holes are fixed, the pump throws the water out. At 3 km – the sunken treasure!
+// Boss only in the 3rd part: 2450 m DEMON OF THE DEEP. When all holes are fixed, the pump throws the water out. At 2500 m – the sunken treasure!
 const sbL = (lt, en) => EN ? en : lt;
 const SUB_SCENE = new THREE.Scene();
 const SB = { cv: null, ctx: null, hud: null, dist: 0, cp: 0, y: 0.45, vy: 0, mx: 0.5, hearts: 30, water: 0, holes: [], intr: [], mons: [], shots: [], fx: [], bubbles: [], km: 0,
@@ -18842,7 +18842,7 @@ const SB_TYPES = {
 };
 const SB_KM = [{ lt: 'lengvas', en: 'easy', spawn: 2.2, hp: 0.6, sp: 0.75, water: 0.5 }, { lt: 'sunkesnis', en: 'harder', spawn: 1.0, hp: 1.15, sp: 1.0 }, { lt: 'PATS SUNKIAUSIAS', en: 'THE HARDEST', spawn: 0.75, hp: 1.5, sp: 1.1 }];
 const SB_BOSSES = [
-  { at: 2950, kind: 'demon', hp: 85, lt: '😈 GELMIŲ DEMONAS', en: '😈 The DEMON OF THE DEEP', minion: 'demon' },
+  { at: 2450, kind: 'demon', hp: 85, lt: '😈 GELMIŲ DEMONAS', en: '😈 The DEMON OF THE DEEP', minion: 'demon' },
 ];
 const sbFmt = m => m < 1000 ? Math.floor(m) + ' m' : (m / 1000).toFixed(2).replace(/0$/, '') + ' km';
 function sbMsg(m) { SB.msg = m; SB.msgT = 2.5; }
@@ -18855,7 +18855,7 @@ function enterSub() {
   try { localStorage.removeItem('modly-pos'); } catch (_) { }
   SB.cp = Math.max(SB.cp || 0, SUBQ.cp || 0); SB.km = Math.min(2, Math.floor(SB.cp / 1000)); sbReset(SB.cp); musicSet(2); setScope(false);
   if (SB.cp > 0) setTimeout(() => toast(sbL(`🚩 Tęsi nuo ${sbFmt(SB.cp)}`, `🚩 You continue from ${sbFmt(SB.cp)}`), '', '#3ac8ff'), 2600);
-  $('bName').textContent = sbL('Gilioji jūra', 'The Deep Sea'); $('bEn').textContent = sbL('Povandeninis laivas', 'Submarine'); $('bAtm').textContent = sbL('Nuplauk 3 km. 1 km – lengvas, 2 – sunkesnis, 3 – pats sunkiausias!', 'Sail 3 km. 1st km – easy, 2nd – harder, 3rd – the hardest!');
+  $('bName').textContent = sbL('Gilioji jūra', 'The Deep Sea'); $('bEn').textContent = sbL('Povandeninis laivas', 'Submarine'); $('bAtm').textContent = sbL('Nuplauk 2500 m. 1 km – lengvas, 2 km – sunkesnis, paskutiniai 500 m – patys sunkiausi!', 'Sail 2500 m. 1st km – easy, 2nd km – harder, the last 500 m – the hardest!');
   document.documentElement.style.setProperty('--biome', '#3ac8ff');
   setTimeout(() => toast(sbL('🌊 GILIOJI JŪRA', '🌊 THE DEEP SEA'), sbL('Kairysis pelės – patranka · dešinysis – torpeda · W/S – aukštyn/žemyn · Viduje: A/D – eiti, Space – mušti, E – taisyti skylę · Q – namo', 'Left mouse – turret · right – torpedo · W/S – up/down · Inside: A/D – walk, Space – hit, E – fix a hole · Q – home'), '#3ac8ff'), 500);
 }
@@ -18918,10 +18918,10 @@ function sbLose(why) {
   setTimeout(() => { if (mode === 'sub') sbReset(SB.cp); }, 2500);
 }
 function sbWin() {
-  SB.won = true; SB.over = true; const first = !SUBQ.done3; SUBQ.done3 = true; SUBQ.done = true; SUBQ.best = 3000; SUBQ.cp = 0; saveSub(); SB.cp = 0;
+  SB.won = true; SB.over = true; const first = !SUBQ.done3; SUBQ.done3 = true; SUBQ.done = true; SUBQ.best = 2500; SUBQ.cp = 0; saveSub(); SB.cp = 0;
   [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.3, { type: 'triangle', vol: 0.07, when: i * 0.1 }));
   if (first) addMoney(10000);
-  bigBanner(sbL('🏆 NUSKENDĘS LOBIS!', '🏆 THE SUNKEN TREASURE!'), first ? sbL('Nuplaukei visus 3 km per monstrų jūrą! +10 000 €', 'You sailed all 3 km through the monster sea! +10 000 €') : sbL('Vėl nuplaukei visus 3 km!', 'You sailed all 3 km again!'));
+  bigBanner(sbL('🏆 NUSKENDĘS LOBIS!', '🏆 THE SUNKEN TREASURE!'), first ? sbL('Nuplaukei visus 2500 m per monstrų jūrą! +10 000 €', 'You sailed all 2500 m through the monster sea! +10 000 €') : sbL('Vėl nuplaukei visus 2500 m!', 'You sailed all 2500 m again!'));
   setTimeout(() => { if (mode === 'sub') leaveSub(sbL('Lobis tavo! Laivas laukia, jei nori plaukti dar kartą', 'The treasure is yours! The submarine waits if you want to sail again')); }, 5000);
 }
 // ---------- every frame ----------
@@ -18933,12 +18933,12 @@ function updateSub(dt, t) {
     const walk = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0); SB.mx = clamp(SB.mx + walk * 0.45 * dt, 0.04, 0.96);
     const blocked = SB.boss && !SB.boss.dead;
     const sp = blocked ? 0 : 14 * Math.max(0.3, 1 - SB.holes.length * 0.2) * (1 - SB.water * 0.4);
-    SB.dist = Math.min(3000, SB.dist + sp * dt); if (SB.dist > SUBQ.best) { SUBQ.best = Math.floor(SB.dist); }
-    const ncp = Math.floor(SB.dist / 1000) * 1000; if (ncp > SB.cp && ncp < 3000) { SB.cp = ncp; SUBQ.cp = ncp; saveSub(); bigBanner(sbL(`🚩 KONTROLINIS TAŠKAS: ${sbFmt(ncp)}`, `🚩 CHECKPOINT: ${sbFmt(ncp)}`), sbL('Jei laivas nuskęs arba išeisi – pradėsi nuo čia', 'If the submarine sinks or you leave – you start from here')); sbMsg(sbL(`🚩 Kontrolinis taškas: ${sbFmt(ncp)}`, `🚩 Checkpoint: ${sbFmt(ncp)}`)); tone(660, 0.2, { type: 'triangle', vol: 0.05 }); tone(880, 0.2, { type: 'triangle', vol: 0.05, when: 0.12 }); }
+    SB.dist = Math.min(2500, SB.dist + sp * dt); if (SB.dist > SUBQ.best) { SUBQ.best = Math.floor(SB.dist); }
+    const ncp = Math.floor(SB.dist / 1000) * 1000; if (ncp > SB.cp && ncp < 2500) { SB.cp = ncp; SUBQ.cp = ncp; saveSub(); bigBanner(sbL(`🚩 KONTROLINIS TAŠKAS: ${sbFmt(ncp)}`, `🚩 CHECKPOINT: ${sbFmt(ncp)}`), sbL('Jei laivas nuskęs arba išeisi – pradėsi nuo čia', 'If the submarine sinks or you leave – you start from here')); sbMsg(sbL(`🚩 Kontrolinis taškas: ${sbFmt(ncp)}`, `🚩 Checkpoint: ${sbFmt(ncp)}`)); tone(660, 0.2, { type: 'triangle', vol: 0.05 }); tone(880, 0.2, { type: 'triangle', vol: 0.05, when: 0.12 }); }
     const km = Math.min(2, Math.floor(SB.dist / 1000)); if (km > SB.km) { SB.km = km; bigBanner(sbL(`${km + 1} KILOMETRAS!`, `KILOMETRE ${km + 1}!`), km === 1 ? sbL('Dabar sunkiau – daugiau ir stipresnių monstrų!', 'Harder now – more and stronger monsters!') : sbL('PATS SUNKIAUSIAS! Atplaukia demonai…', 'THE HARDEST! The demons are coming…')); tone(80, 1, { to: 50, type: 'sawtooth', vol: 0.1, lp: 400 }); }
     const BN = SB_BOSSES[SB.bossNext];
     if (BN && SB.dist >= BN.at && !SB.boss) { const hp = Math.round(BN.hp * sbHard()); SB.boss = { kind: BN.kind, minion: BN.minion, x: g.W + 200 * g.u, y: g.H * 0.45, hp, hpMax: hp, t: 0, fl: 0, armT: 3 }; sbMsg(sbL(`${BN.lt} užstojo kelią!`, `${BN.en} blocks the way!`)); tone(60, 1.5, { to: 40, type: 'sawtooth', vol: 0.12, lp: 300 }); }
-    if (SB.dist >= 3000) sbWin();
+    if (SB.dist >= 2500) sbWin();
     // monsters come
     SB.spawnT -= dt;
     const KM = SB_KM[Math.min(2, Math.floor(SB.dist / 1000))];
@@ -18983,7 +18983,7 @@ function updateSub(dt, t) {
 function sbDraw(g, t) {
   const c = SB.cv, x = SB.ctx, W = g.W, H = g.H, u = g.u; if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
   x.save(); if (SB.shake > 0) x.translate((Math.random() - 0.5) * 16 * SB.shake, (Math.random() - 0.5) * 16 * SB.shake);
-  const deep = Math.min(1, SB.dist / 3000), grd = x.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, `rgb(${Math.round(40 - 30 * deep)},${Math.round(140 - 110 * deep)},${Math.round(200 - 140 * deep)})`); grd.addColorStop(1, `rgb(${Math.round(10 - 6 * deep + (SB.dist > 2000 ? 40 * (SB.dist - 2000) / 1000 : 0))},${Math.round(40 - 30 * deep)},${Math.round(80 - 50 * deep)})`);
+  const deep = Math.min(1, SB.dist / 2500), grd = x.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, `rgb(${Math.round(40 - 30 * deep)},${Math.round(140 - 110 * deep)},${Math.round(200 - 140 * deep)})`); grd.addColorStop(1, `rgb(${Math.round(10 - 6 * deep + (SB.dist > 2000 ? 40 * (SB.dist - 2000) / 1000 : 0))},${Math.round(40 - 30 * deep)},${Math.round(80 - 50 * deep)})`);
   x.fillStyle = grd; x.fillRect(-20, -20, W + 40, H + 40);
   // light rays
   x.globalAlpha = 0.07 * (1 - deep); x.fillStyle = '#fff'; for (let i = 0; i < 5; i++) { const px = ((i * 260 - SB.dist * 6) % (W + 300) + W + 300) % (W + 300) - 150; x.beginPath(); x.moveTo(px, 0); x.lineTo(px + 80, 0); x.lineTo(px + 240, H); x.lineTo(px + 120, H); x.fill(); } x.globalAlpha = 1;
@@ -18995,7 +18995,7 @@ function sbDraw(g, t) {
   // distance markers
   x.fillStyle = 'rgba(255,255,255,.5)'; x.font = `bold ${14 * u}px system-ui`; for (let m = Math.ceil((SB.dist - 10) / 50) * 50; m < SB.dist + 60; m += 50) { const px = g.sx + (m - SB.dist) * 30 * u; if (px > 0 && px < W) { x.fillRect(px - 1, fy - 40 * u, 2, 40 * u); x.fillText(sbFmt(m), px + 4, fy - 30 * u); } }
   // the treasure near 500 m
-  if (SB.dist > 2970) { const px = g.sx + (3000 - SB.dist) * 30 * u; x.fillStyle = '#8a5a2b'; x.fillRect(px - 40 * u, fy - 40 * u, 80 * u, 40 * u); x.fillStyle = '#ffd23a'; x.fillRect(px - 44 * u, fy - 50 * u, 88 * u, 14 * u); x.fillStyle = 'rgba(255,230,80,.5)'; x.beginPath(); x.arc(px, fy - 40 * u, 60 * u + Math.sin(t * 4) * 6 * u, 0, 7); x.fill(); }
+  if (SB.dist > 2470) { const px = g.sx + (2500 - SB.dist) * 30 * u; x.fillStyle = '#8a5a2b'; x.fillRect(px - 40 * u, fy - 40 * u, 80 * u, 40 * u); x.fillStyle = '#ffd23a'; x.fillRect(px - 44 * u, fy - 50 * u, 88 * u, 14 * u); x.fillStyle = 'rgba(255,230,80,.5)'; x.beginPath(); x.arc(px, fy - 40 * u, 60 * u + Math.sin(t * 4) * 6 * u, 0, 7); x.fill(); }
   // bubbles
   if (SB.bubbles.length < 40) SB.bubbles.push({ x: Math.random() * W, y: H + 10, r: (2 + Math.random() * 5) * u, s: 30 + Math.random() * 60 });
   x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = 1.5; for (const b of SB.bubbles) { b.y -= b.s * 0.016; b.x -= 0.5; if (b.y < -10) { b.y = H + 10; b.x = Math.random() * W; } x.beginPath(); x.arc(b.x, b.y, b.r, 0, 7); x.stroke(); }
@@ -19079,8 +19079,8 @@ function sbDrawBoss(x, b, t, u) {
 }
 function sbHud() {
   if (!SB.hud) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:6;background:rgba(10,20,40,.8);border:1px solid rgba(58,200,255,.6);border-radius:14px;padding:6px 14px;font:700 14px system-ui;color:#fff;pointer-events:none;text-align:center;min-width:320px'; document.body.appendChild(d); SB.hud = d; }
-  SB.hud.hidden = false; const pct = SB.dist / 3000 * 100, KM = SB_KM[Math.min(2, Math.floor(SB.dist / 1000))];
-  SB.hud.innerHTML = `🚢 <b>${sbFmt(SB.dist)} / 3 km</b> <span style="color:${['#9aff7a', '#ffb84a', '#ff5a5a'][SB_KM.indexOf(KM)]}">(${SB_KM.indexOf(KM) + 1} km – ${sbL(KM.lt, KM.en)})</span> · ❤️ <b>${Math.max(0, SB.hearts)}/30</b> · 💧 ${Math.round(SB.water * 100)}% · 🕳 ${SB.holes.length}${SB.torT > 0 ? ` · 🚀 ${Math.ceil(SB.torT)} s` : ' · 🚀 ' + sbL('paruošta', 'ready')}<div style="margin-top:4px;height:8px;background:#123;border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#3ac8ff,#ffd23a)"></div></div>`;
+  SB.hud.hidden = false; const pct = SB.dist / 2500 * 100, KM = SB_KM[Math.min(2, Math.floor(SB.dist / 1000))];
+  SB.hud.innerHTML = `🚢 <b>${sbFmt(SB.dist)} / 2.5 km</b> <span style="color:${['#9aff7a', '#ffb84a', '#ff5a5a'][SB_KM.indexOf(KM)]}">(${SB_KM.indexOf(KM) + 1} km – ${sbL(KM.lt, KM.en)})</span> · ❤️ <b>${Math.max(0, SB.hearts)}/30</b> · 💧 ${Math.round(SB.water * 100)}% · 🕳 ${SB.holes.length}${SB.torT > 0 ? ` · 🚀 ${Math.ceil(SB.torT)} s` : ' · 🚀 ' + sbL('paruošta', 'ready')}<div style="margin-top:4px;height:8px;background:#123;border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#3ac8ff,#ffd23a)"></div></div>`;
 }
 fx.push(() => { if (mode !== 'sub') { if (SB.hud) SB.hud.hidden = true; if (SB.cv && !SB.cv.hidden) SB.cv.hidden = true; } return true; });
 // ---------- the yellow submarine at the edge of the Starting City square ----------
