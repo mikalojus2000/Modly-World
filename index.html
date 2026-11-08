@@ -17794,13 +17794,13 @@ function frame() {
     updatePlanet(dt, T); updateCameraPlanet(dt); if (scoped) scopeCamera();
   } else {
     if (!locked) { const k = 1.8 * dt / 0.0024; if (keys.ArrowLeft) look(-k, 0); if (keys.ArrowRight) look(k, 0); if (keys.ArrowUp) look(0, -k * 0.6); if (keys.ArrowDown) look(0, k * 0.6); }
-    if (mode === 'home') updateHome(dt, T); else if (mode === 'kitchen') updateKitchen(dt, T); else if (mode === 'mars') updateMars(dt, T); else if (mode === 'museum') updateMuseum(dt, T); else if (mode === 'caphouse') updateCapHouse(dt, T); else if (mode === 'cave') updateCave(dt, T); else if (mode === 'candy') updateCandy(dt, T); else if (mode === 'rainbow') updateRainbow(dt, T); else if (mode === 'marscloud') updateMarsCloud(dt, T); else if (mode === 'stone') updateStone(dt, T); else if (mode === 'future') updateFuture(dt, T); else if (mode === 'space') updateSpace(dt, T); else if (mode === 'sea') updateSea(dt, T); else if (mode === 'sun') updateSunWorld(dt, T); else if (mode === 'time') updateTimeWorld(dt, T); else if (mode === 'upside') updateUpside(dt, T); else if (mode === 'thunder') updateThunder(dt, T); else if (mode === 'dig') updateDig(dt, T); else if (mode === 'wind') updateWind(dt, T); else if (mode === 'star') updateStar(dt, T); else if (mode === 'cloudcastle') updateCloudCastle(dt, T); else if (mode === 'pk') updatePk(dt, T); else if (mode === 'sr') updateSr(dt, T); else if (mode === 'tea') updateTea(dt, T); else if (mode === 'void') updateVoid(dt, T); else if (mode === 'mine') updateMine(dt, T); else if (mode === 'fam') updateFam(dt, T); else if (mode === 'sub') { if (typeof updateSub === 'function') updateSub(dt, T); } else { updateSanctum(dt, T); applyShake(dt); }
+    if (mode === 'home') updateHome(dt, T); else if (mode === 'kitchen') updateKitchen(dt, T); else if (mode === 'mars') updateMars(dt, T); else if (mode === 'museum') updateMuseum(dt, T); else if (mode === 'caphouse') updateCapHouse(dt, T); else if (mode === 'cave') updateCave(dt, T); else if (mode === 'candy') updateCandy(dt, T); else if (mode === 'rainbow') updateRainbow(dt, T); else if (mode === 'marscloud') updateMarsCloud(dt, T); else if (mode === 'stone') updateStone(dt, T); else if (mode === 'future') updateFuture(dt, T); else if (mode === 'space') updateSpace(dt, T); else if (mode === 'sea') updateSea(dt, T); else if (mode === 'sun') updateSunWorld(dt, T); else if (mode === 'time') updateTimeWorld(dt, T); else if (mode === 'upside') updateUpside(dt, T); else if (mode === 'thunder') updateThunder(dt, T); else if (mode === 'dig') updateDig(dt, T); else if (mode === 'wind') updateWind(dt, T); else if (mode === 'star') updateStar(dt, T); else if (mode === 'cloudcastle') updateCloudCastle(dt, T); else if (mode === 'pk') updatePk(dt, T); else if (mode === 'sr') updateSr(dt, T); else if (mode === 'tea') updateTea(dt, T); else if (mode === 'void') updateVoid(dt, T); else if (mode === 'mine') updateMine(dt, T); else if (mode === 'fam') updateFam(dt, T); else if (mode === 'sub') { if (typeof updateSub === 'function') updateSub(dt, T); } else if (mode === 'lab') { if (typeof updateLab === 'function') updateLab(dt, T); } else { updateSanctum(dt, T); applyShake(dt); }
   }
   bubbleU.uTime.value = T; bubbleU.uCam.value.copy(camera.position);
   renderer.setViewport(0, 0, innerWidth, innerHeight); renderer.clear();
-  renderer.render(mode === 'sub' ? (typeof SUB_SCENE !== 'undefined' ? SUB_SCENE : scene) : mode === 'fam' ? famScene : mode === 'mine' ? mineScene : mode === 'void' ? voidScene : mode === 'tea' ? teaScene : mode === 'sr' ? srScene : mode === 'pk' ? pkScene : mode === 'sanctum' ? sanc : mode === 'home' ? homeScene : mode === 'kitchen' ? kitchenScene : mode === 'mars' ? marsScene : mode === 'museum' ? museumScene : mode === 'caphouse' ? chScene : mode === 'cave' ? caveScene : mode === 'candy' ? candyScene : mode === 'rainbow' ? rbScene : mode === 'marscloud' ? mcScene : mode === 'stone' ? ugScene : mode === 'future' ? fuScene : mode === 'space' ? spScene : mode === 'cloudcastle' ? ccScene : mode === 'upside' ? udScene : mode === 'star' || (mode === 'attract' && inStar()) ? stScene : mode === 'wind' || (mode === 'attract' && inWind()) ? wiScene : mode === 'thunder' || mode === 'dig' || (mode === 'attract' && inThunder()) ? thScene : mode === 'time' || (mode === 'attract' && inTime()) ? twScene : mode === 'sun' || (mode === 'attract' && inSun()) ? sunScene : mode === 'sea' || (mode === 'attract' && inSeaForever()) ? seaScene : scene, camera);
-  if (mode !== 'attract' && mode !== 'home' && mode !== 'kitchen' && mode !== 'mars' && mode !== 'museum' && mode !== 'caphouse' && mode !== 'cave' && mode !== 'candy' && mode !== 'rainbow' && mode !== 'marscloud' && mode !== 'stone' && mode !== 'future' && mode !== 'space' && mode !== 'sea' && mode !== 'sun' && mode !== 'cloudcastle' && mode !== 'time' && mode !== 'upside' && mode !== 'thunder' && mode !== 'dig' && mode !== 'wind' && mode !== 'star' && mode !== 'pk' && mode !== 'sr' && mode !== 'tea' && mode !== 'void' && mode !== 'mine' && mode !== 'fam' && mode !== 'sub') renderMini();
-  $('mapFrame').style.visibility = mode === 'home' || mode === 'kitchen' || mode === 'mars' || mode === 'museum' || mode === 'caphouse' || mode === 'cave' || mode === 'candy' || mode === 'rainbow' || mode === 'marscloud' || mode === 'stone' || mode === 'future' || mode === 'space' || mode === 'sea' || mode === 'sun' || mode === 'cloudcastle' || mode === 'time' || mode === 'upside' || mode === 'thunder' || mode === 'dig' || mode === 'wind' || mode === 'star' || mode === 'pk' || mode === 'sr' || mode === 'tea' || mode === 'void' || mode === 'mine' || mode === 'fam' || mode === 'sub' ? 'hidden' : '';
+  renderer.render(mode === 'lab' ? LB.scene : mode === 'sub' ? (typeof SUB_SCENE !== 'undefined' ? SUB_SCENE : scene) : mode === 'fam' ? famScene : mode === 'mine' ? mineScene : mode === 'void' ? voidScene : mode === 'tea' ? teaScene : mode === 'sr' ? srScene : mode === 'pk' ? pkScene : mode === 'sanctum' ? sanc : mode === 'home' ? homeScene : mode === 'kitchen' ? kitchenScene : mode === 'mars' ? marsScene : mode === 'museum' ? museumScene : mode === 'caphouse' ? chScene : mode === 'cave' ? caveScene : mode === 'candy' ? candyScene : mode === 'rainbow' ? rbScene : mode === 'marscloud' ? mcScene : mode === 'stone' ? ugScene : mode === 'future' ? fuScene : mode === 'space' ? spScene : mode === 'cloudcastle' ? ccScene : mode === 'upside' ? udScene : mode === 'star' || (mode === 'attract' && inStar()) ? stScene : mode === 'wind' || (mode === 'attract' && inWind()) ? wiScene : mode === 'thunder' || mode === 'dig' || (mode === 'attract' && inThunder()) ? thScene : mode === 'time' || (mode === 'attract' && inTime()) ? twScene : mode === 'sun' || (mode === 'attract' && inSun()) ? sunScene : mode === 'sea' || (mode === 'attract' && inSeaForever()) ? seaScene : scene, camera);
+  if (mode !== 'attract' && mode !== 'home' && mode !== 'kitchen' && mode !== 'mars' && mode !== 'museum' && mode !== 'caphouse' && mode !== 'cave' && mode !== 'candy' && mode !== 'rainbow' && mode !== 'marscloud' && mode !== 'stone' && mode !== 'future' && mode !== 'space' && mode !== 'sea' && mode !== 'sun' && mode !== 'cloudcastle' && mode !== 'time' && mode !== 'upside' && mode !== 'thunder' && mode !== 'dig' && mode !== 'wind' && mode !== 'star' && mode !== 'pk' && mode !== 'sr' && mode !== 'tea' && mode !== 'void' && mode !== 'mine' && mode !== 'fam' && mode !== 'sub' && mode !== 'lab') renderMini();
+  $('mapFrame').style.visibility = mode === 'home' || mode === 'kitchen' || mode === 'mars' || mode === 'museum' || mode === 'caphouse' || mode === 'cave' || mode === 'candy' || mode === 'rainbow' || mode === 'marscloud' || mode === 'stone' || mode === 'future' || mode === 'space' || mode === 'sea' || mode === 'sun' || mode === 'cloudcastle' || mode === 'time' || mode === 'upside' || mode === 'thunder' || mode === 'dig' || mode === 'wind' || mode === 'star' || mode === 'pk' || mode === 'sr' || mode === 'tea' || mode === 'void' || mode === 'mine' || mode === 'fam' || mode === 'sub' || mode === 'lab' ? 'hidden' : '';
   requestAnimationFrame(frame);
 }
 
@@ -18040,6 +18040,7 @@ const GIFTS = [
   { id: 'wwww-1', to: 'wwww', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, note: 'VISKAS, KAS ĮMANOMA! Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'EVERYTHING POSSIBLE! All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
   { id: 'vytisra2-1', to: 'vytisra2', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, note: 'VISKAS, KAS ĮMANOMA! Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'EVERYTHING POSSIBLE! All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
   { id: 'lll-1', to: 'lll', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, all: true, note: 'VISAS ŽAIDIMAS PEREITAS! Visi įsakymai įvykdyti. Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'THE WHOLE GAME IS FINISHED! All commands done. All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
+  { id: 'as nesu gejus-1', to: 'as nesu gejus', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, all: true, lab: true, note: 'VISAS ŽAIDIMAS PEREITAS! Visi įsakymai įvykdyti. Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'THE WHOLE GAME IS FINISHED! All commands done. All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
   { id: 'l l l-1', to: 'l l l', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, all: true, note: 'VISAS ŽAIDIMAS PEREITAS! Visi įsakymai įvykdyti. Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'THE WHOLE GAME IS FINISHED! All commands done. All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
   // { id: 'g1', to: 'vardas', money: 10000, cars: ['rocket'], skins: ['king'], pets: ['unicorn'], backs: ['wings'], note: 'Ačiū, kad žaidi!' },
 ];
@@ -18072,6 +18073,8 @@ fx.push(() => {
       if (typeof phoneRead !== 'undefined') { phoneRead = true; try { localStorage.setItem('modly-phone-read', '1'); } catch (_) { } }
       for (const f of ['refreshDemonQuest', 'refreshSpaceRamp', 'refreshGodPhone', 'refreshSeaGate', 'refreshChecklist']) { try { const fn = eval(`typeof ${f} === 'function' ? ${f} : null`); if (fn) fn(); } catch (_) { } }
     } catch (e) { console.error(e); } }
+  // the scientists come right away (their house is NOT done yet)
+  if (g.lab) setTimeout(() => { try { if (typeof LAB !== 'undefined' && LAB.stage !== 'done') { LAB.stage = 'offer'; saveLab(); } } catch (e) { console.error(e); } }, 6000);
   // "everything possible": all Star Goddess powers (1–5), the game finished, a GOD with an own planet, the Family already beaten
   if (g.max) setTimeout(() => { try { hideCard(); if (typeof batTest === 'function') batTest(2); Q29.stage = 'done'; saveQ29(); TEA.invited = true; localStorage.setItem('modly-teainv', '1');
     GOD.stage = 'god'; GOD.lights = [0, 1, 2, 3, 4]; saveGod(); if (typeof FAM !== 'undefined') { FAM.stage = 'won'; saveFam(); } if (typeof gateKeyRow === 'function') gateKeyRow(); if (typeof godHalo === 'function') godHalo();
@@ -19202,5 +19205,256 @@ setTimeout(() => { try { document.querySelectorAll('#keys span').forEach(s => { 
 { const _b = buildPauseMenu; buildPauseMenu = (...a) => { const r = _b(...a);
     try { const top = document.querySelector('#paused .pauseBtns'); if (top && !document.getElementById('pmAch')) { const b = document.createElement('button'); b.id = 'pmAch'; b.className = 'btn'; b.type = 'button'; b.style.cssText = 'background:#ffd23a;color:#3a2a00'; b.textContent = '🏆 ' + achL('Pasiekimai (G)', 'Achievements (G)'); b.onclick = e => { e.stopPropagation(); closePause(false); acOpen(); }; top.appendChild(b); } } catch (e) { console.error(e); }
     return r; }; }
+
+// ================= THE SCIENTISTS' HOUSE 🔬 – you are tiny like a spider =================
+// After you are a GOD and won your powers back from the Element Family, 4 scientists come and offer 50 000 € for an
+// "unknown job". You must accept. In their house (2 floors) they shrink you in the shrinking machine and the machine
+// steals your god powers – they tricked you! Escape plan:
+//  1) bathroom – behind the bathtub: the KITCHEN KEY   2) kitchen – fridge – break the EGG: the STAIRS KEY
+//  3) upstairs – bedroom, by the computer: a MINI SAW  4) saw the board under the living-room door
+//  5) living room – the scientists watch TV. When there is an ADVERT they look around: DON'T MOVE!
+//  6) the snack cabinet – the chips bag has the CODE   7) downstairs – type the code into the shrinking machine → big again
+//  8) the scientists are shocked: you get your powers back and the promised 50 000 €.
+const lbL = (lt, en) => EN ? en : lt;
+let LAB = { stage: 'none', t0: 0, kitchenKey: false, kitchenOpen: false, fridge: false, egg: false, stairsKey: false, stairsOpen: false, saw: false, boardCut: false, code: '', gotCode: false };
+try { const s = JSON.parse(localStorage.getItem('modly-lab') || 'null'); if (s) LAB = Object.assign(LAB, s); } catch (_) { }
+function saveLab() { try { localStorage.setItem('modly-lab', JSON.stringify(LAB)); } catch (_) { } }
+const LP = 0.16, LF2 = 400, LH = 52;
+const LB = { built: false, scene: new THREE.Scene(), boxes: [], inter: [], doors: {}, sci: [], tv: null, tvCv: null, tvX: null, tvTex: null, tvState: 'show', tvLeft: 7, tvDraw: 0, hud: null, beacon: null, codeOpen: false, codeEl: null, adGrace: 0, items: {} };
+const lbR = (x0, z0, x1, z1, f2) => [x0 * LP + (f2 ? LF2 : 0), z0 * LP, x1 * LP + (f2 ? LF2 : 0), z1 * LP];
+function lbBox(u, y0, y1, color, collide, o) {
+  o = o || {}; const [x0, z0, x1, z1] = u; const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+  const m = S(G.box, mat(color, o.m), x1 - x0, y1 - y0, z1 - z0, cx, (y0 + y1) / 2, cz); LB.scene.add(m);
+  let b = null; if (collide) { b = { x: cx, z: cz, hx: (x1 - x0) / 2, hz: (z1 - z0) / 2, h: o.wall ? undefined : y1 }; LB.boxes.push(b); }
+  return { m, b };
+}
+const LWC1 = 0xf0e6d2, LWC2 = 0xe6dcf0, LWT = 1.4;
+function lbWallH(zpx, x0px, x1px, gaps, f2) { let a = x0px; const segs = []; for (const [g0, g1] of (gaps || []).slice().sort((p, q) => p[0] - q[0])) { if (g0 > a) segs.push([a, g0]); a = Math.max(a, g1); } if (x1px > a) segs.push([a, x1px]);
+  for (const [s0, s1] of segs) { const [x0, , x1] = lbR(s0, 0, s1, 0, f2), z = zpx * LP; lbBox([x0, z - LWT / 2, x1, z + LWT / 2], 0, LH, f2 ? LWC2 : LWC1, true, { wall: true }); } }
+function lbWallV(xpx, z0px, z1px, gaps, f2) { let a = z0px; const segs = []; for (const [g0, g1] of (gaps || []).slice().sort((p, q) => p[0] - q[0])) { if (g0 > a) segs.push([a, g0]); a = Math.max(a, g1); } if (z1px > a) segs.push([a, z1px]);
+  for (const [s0, s1] of segs) { const x = xpx * LP + (f2 ? LF2 : 0); lbBox([x - LWT / 2, s0 * LP, x + LWT / 2, s1 * LP], 0, LH, f2 ? LWC2 : LWC1, true, { wall: true }); } }
+// a giant door in a vertical wall (x), between z0 and z1 (px). Locked = it blocks you.
+function lbDoor(name, xpx, z0px, z1px, f2, locked, color, gapUnder) {
+  const x = xpx * LP + (f2 ? LF2 : 0), z0 = z0px * LP, z1 = z1px * LP, w = z1 - z0, piv = new THREE.Group(); piv.position.set(x, 0, z0); LB.scene.add(piv);
+  const y0 = gapUnder || 0, panel = S(G.box, mat(color || 0x8a5a2b), 1.2, 42 - y0, w, 0, y0 + (42 - y0) / 2, w / 2); piv.add(panel);
+  const knob = S(G.sph, mat(0xffd23a, { metalness: 0.7, roughness: 0.3 }), 1.2, 1.2, 1.2, 1.2, 20, w - 3); piv.add(knob); const knob2 = knob.clone(); knob2.position.x = -1.2; piv.add(knob2);
+  let b = null; if (locked) { b = { x, z: (z0 + z1) / 2, hx: 1.2, hz: w / 2 }; LB.boxes.push(b); }
+  LB.doors[name] = { piv, b, open: false, x, z0, z1 }; return LB.doors[name];
+}
+function lbOpenDoor(name) { const d = LB.doors[name]; if (!d || d.open) return; d.open = true; if (d.b) { const i = LB.boxes.indexOf(d.b); if (i >= 0) LB.boxes.splice(i, 1); } let a = 0; fx.push(dt => { a = Math.min(1, a + dt * 1.5); d.piv.rotation.y = -a * 1.4; return a < 1; }); tone(180, 0.6, { to: 120, type: 'sawtooth', vol: 0.05, lp: 500 }); }
+function lbFloor(u, color) { const [x0, z0, x1, z1] = u; const m = S(G.box, mat(color), x1 - x0, 0.4, z1 - z0, (x0 + x1) / 2, -0.2, (z0 + z1) / 2); LB.scene.add(m); }
+function lbKey(color) { const g = new THREE.Group(), m = mat(color || 0xffd23a, { metalness: 0.7, roughness: 0.3, emissive: 0x3a2a00 }); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.1, 8, 16), m); ring.position.y = 0.45; ring.rotation.y = Math.PI / 2; g.add(ring); g.add(S(G.box, m, 0.12, 0.12, 1.1, 0, 0.45, 0.85)); g.add(S(G.box, m, 0.12, 0.3, 0.12, 0, 0.3, 1.25)); g.add(S(G.box, m, 0.12, 0.25, 0.12, 0, 0.32, 1.0)); return g; }
+function lbInter(o) { LB.inter.push(o); return o; }
+// ---------- building the house ----------
+function buildLab() {
+  if (LB.built) return; LB.built = true; const sc = LB.scene; sc.background = new THREE.Color(0x1a1a2a);
+  sc.add(new THREE.AmbientLight(0xffffff, 0.55)); sc.add(new THREE.HemisphereLight(0xfff4e0, 0x6a5a4a, 0.55)); { const s = new THREE.DirectionalLight(0xffffff, 0.55); s.position.set(200, 300, 150); sc.add(s); }
+  // ===== 1st floor =====
+  lbFloor(lbR(0, 0, 620, 400), 0x9ad8e8); lbFloor(lbR(620, 0, 1060, 400), 0xc8a070); lbFloor(lbR(1060, 0, 1620, 400), 0xa08060); lbFloor(lbR(0, 400, 890, 770), 0x8aa08a); lbFloor(lbR(890, 400, 1620, 770), 0xe8d8a0);
+  { const c = S(G.box, mat(0xfaf6ee), 1620 * LP, 0.5, 770 * LP, 810 * LP, LH + 0.25, 385 * LP); sc.add(c); }
+  lbWallH(0, 0, 1620); lbWallH(770, 0, 1620); lbWallV(0, 0, 770); lbWallV(1620, 0, 770);
+  lbWallH(400, 0, 1620, [[805, 885]]); lbWallV(620, 0, 400, [[60, 180]]); lbWallV(1060, 0, 400, [[70, 290]]); lbWallV(890, 400, 770, [[497, 604]]);
+  // bathroom
+  { const t = lbBox(lbR(0, 80, 115, 340), 0, 11, 0xffffff, true); lbBox(lbR(12, 95, 103, 325), 9.5, 10.6, 0x6ac8ff, false); }
+  lbBox(lbR(370, 265, 475, 385), 0, 9, 0xf4f4f4, true); lbBox(lbR(380, 360, 465, 385), 9, 20, 0xf4f4f4, true);
+  lbBox(lbR(500, 183, 620, 265), 0, 17, 0xffffff, true); lbBox(lbR(500, 265, 620, 345), 0, 17, 0xe8e8f0, true);
+  { const w = new THREE.Mesh(new THREE.CylinderGeometry(4.5, 4.5, 0.6, 24), mat(0x3a5a8a)); w.rotation.x = Math.PI / 2; w.position.set(560 * LP, 9, 345 * LP + 0.3); sc.add(w); }
+  // hall + jacket wardrobe + jackets on the stairs door
+  lbBox(lbR(622, 280, 768, 400), 0, 40, 0x7a4a2a, true);
+  // research room
+  lbBox(lbR(0, 405, 90, 770), 0, 45, 0x6a4a2a, true); for (let i = 0; i < 4; i++) for (let k = 0; k < 6; k++) lbBox([14.6, 66 + k * 9.5, 15.6, 72 + k * 9.5].map((v, j) => j % 2 ? v : v), 4 + i * 10, 11 + i * 10, [0xc8302a, 0x2a6ac8, 0x3ac85a, 0xffd23a][(i + k) % 4], false);
+  lbBox(lbR(143, 455, 245, 555), 0, 10, 0x8a6a4a, true); { const p = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 0.6, 24), mat(0xffb84a)); p.position.set(194 * LP, 10.3, 505 * LP); sc.add(p); for (let i = 0; i < 6; i++) { const s = S(G.cyl, mat(0xc8302a), 1.2, 0.3, 1.2, 194 * LP + Math.cos(i) * 4, 10.7, 505 * LP + Math.sin(i * 2) * 4); sc.add(s); } }
+  lbTable(lbR(258, 532, 588, 650), 15, 0x4a4a5a); for (let i = 0; i < 5; i++) { const f = S(G.cyl, mat([0x5aff8a, 0xff5ad8, 0x5ad8ff, 0xffd23a, 0xff7a3a][i], { emissive: [0x0a4a1a, 0x4a0a3a, 0x0a3a4a, 0x4a3a00, 0x4a1a00][i] }), 1.4, 4, 1.4, 45 + i * 9, 17, 92 + (i % 2) * 6); sc.add(f); }
+  lbBox(lbR(470, 548, 540, 590), 15, 22, 0x3a2a1a, false); lbBox(lbR(280, 600, 340, 640), 15, 17, 0xc8a070, false);
+  // the shrinking machine
+  lbBox(lbR(598, 408, 843, 522), 0, 30, 0x8a94a8, true, { m: { metalness: 0.5, roughness: 0.4 } });
+  { const tube = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 30, 24, 1, true), new THREE.MeshStandardMaterial({ color: 0x9affff, transparent: true, opacity: 0.35, side: THREE.DoubleSide })); tube.position.set(560 * LP, 15, 465 * LP); sc.add(tube); LB.tube = tube;
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(6.2, 0.6, 8, 32), bmat(0x5affff)); ring.rotation.x = Math.PI / 2; ring.position.set(560 * LP, 1, 465 * LP); sc.add(ring); LB.ring = ring; LB.boxes.push({ x: 560 * LP, z: 465 * LP, hx: 5, hz: 5 }); }
+  for (let i = 0; i < 3; i++) lbBox([100 + i * 10, 64.5, 106 + i * 10, 65.4], 10, 16, [0xff3a3a, 0xffd23a, 0x5aff5a][i], false, { m: { emissive: [0x6a0000, 0x6a4a00, 0x006a00][i] } });
+  LB.panel = lbBox([108, 83.6, 122, 85.2], 0, 5, 0x2a2a3a, false); lbBox([109, 85.2, 121, 85.5], 1.2, 4.2, 0x5affff, false, { m: { emissive: 0x2a8a8a } });
+  lbBox(lbR(110, 660, 330, 770), 0, 17, 0xa07a4a, true); lbBox(lbR(368, 705, 560, 770), 0, 17, 0xa07a4a, true); lbBox(lbR(650, 705, 822, 770), 0, 17, 0xa07a4a, true);
+  // kitchen
+  lbTable(lbR(1057, 517, 1264, 607), 15, 0xc8904a);
+  LB.fridge = lbBox(lbR(1347, 413, 1477, 523), 0, 36, 0xf4f4f8, true); { const piv = new THREE.Group(); piv.position.set(1347 * LP, 0, 523 * LP); sc.add(piv); piv.add(S(G.box, mat(0xe8e8f0), 130 * LP, 35, 0.8, 65 * LP, 17.8, 0.4)); piv.add(S(G.box, mat(0x9a9aa2, { metalness: 0.6 }), 0.8, 8, 0.8, 120 * LP, 20, 1.2)); LB.fridgeDoor = piv; }
+  lbBox(lbR(1477, 413, 1615, 527), 0, 17, 0x5a5a6a, true); { const w = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 0.4, 24), mat(0x2a2a2a, { emissive: 0x3a1a00 })); w.rotation.x = Math.PI / 2; w.position.set(1546 * LP, 9, 527 * LP + 0.2); sc.add(w); }
+  lbBox(lbR(1483, 532, 1615, 745), 0, 17, 0xd8d8e0, true); for (const [x, z, r] of [[1550, 600, 3.3], [1525, 640, 2.2], [1580, 640, 2.2]]) { const h = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.3, 20), mat(0x2a2a2a)); h.position.set(x * LP, 17.2, z * LP); sc.add(h); }
+  lbBox(lbR(895, 660, 1012, 748), 0, 40, 0x8a5a2b, true); lbBox(lbR(1170, 665, 1310, 748), 0, 17, 0xb07a4a, true); for (let i = 0; i < 5; i++) { const pl = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 0.4, 20), mat(0xffffff)); pl.position.set(1240 * LP, 17.3 + i * 0.5, 706 * LP); sc.add(pl); }
+  // the doors of the 1st floor
+  lbDoor('kitchen', 890, 497, 604, false, !LAB.kitchenOpen, 0x6a3a1a); if (LAB.kitchenOpen) { LB.doors.kitchen.open = true; LB.doors.kitchen.piv.rotation.y = -1.4; }
+  lbDoor('stairs', 1060, 70, 290, false, !LAB.stairsOpen, 0x5a3a2a); if (LAB.stairsOpen) { LB.doors.stairs.open = true; LB.doors.stairs.piv.rotation.y = -1.4; }
+  for (let i = 0; i < 4; i++) { const j = S(G.box, mat([0x3a6ac8, 0xc83a3a, 0x3a8a3a, 0x8a6a3a][i]), 2.2, 14, 7, 1060 * LP - 2, 26, 15 + i * 7.5); LB.doors.stairs.piv.add(j); j.position.set(-2.2, 24, 4 + i * 7.5); }
+  // stairs going up (behind the stairs door)
+  for (let i = 0; i < 8; i++) lbBox([172 + i * 10, 2, 182 + i * 10, 62], 0, 4 + i * 4, 0xb08a5a, false);
+  // ===== 2nd floor (to the right, x + 400) =====
+  lbFloor(lbR(0, 0, 740, 807, true), 0xb08a5a); lbFloor(lbR(740, 0, 1900, 570, true), 0xd8b890); lbFloor(lbR(740, 570, 1900, 807, true), 0xc8b8e8); lbFloor(lbR(1320, 345, 1900, 570, true), 0xc8b8e8);
+  { const c = S(G.box, mat(0xfaf6ee), 1900 * LP, 0.5, 807 * LP, LF2 + 950 * LP, LH + 0.25, 403 * LP); sc.add(c); }
+  lbWallH(0, 0, 1900, [], true); lbWallH(807, 0, 1900, [], true); lbWallV(0, 0, 807, [], true); lbWallV(1900, 0, 807, [], true);
+  lbWallV(740, 0, 570, [[58, 190]], true); lbWallH(570, 740, 1320, [], true); lbWallV(1320, 345, 570, [], true); lbWallH(345, 1320, 1900, [], true);
+  for (let i = 0; i < 6; i++) lbBox([LF2 + i * 6.5, 0, LF2 + 6.5 + i * 6.5, 35], 0, 24 - i * 4, 0xa07a4a, true);
+  lbBox(lbR(623, 195, 740, 570, true), 0, 40, 0x7a4a2a, true);
+  // the living-room door: locked; under it a board – you saw it away and crawl under the door
+  lbDoor('living', 740, 58, 190, true, false, 0x6a3a1a, 2.6);
+  { const x = 740 * LP + LF2; LB.board = lbBox([x - 1, 58 * LP, x + 1, 190 * LP], 0, 2.6, 0xc8a050, !LAB.boardCut); if (LAB.boardCut) LB.board.m.visible = false; }
+  // living room: TV, sofa with the scientists, snack cabinet, mini fridge
+  lbBox(lbR(887, 92, 1195, 205, true), 0, 10, 0x4a3a2a, true); lbBox(lbR(968, 140, 1102, 152, true), 10, 11, 0x1a1a1a, false);
+  { const cv = document.createElement('canvas'); cv.width = 256; cv.height = 144; LB.tvCv = cv; LB.tvX = cv.getContext('2d'); LB.tvTex = new THREE.CanvasTexture(cv);
+    const scr = new THREE.Mesh(new THREE.PlaneGeometry(134 * LP * 1.6, 12), new THREE.MeshBasicMaterial({ map: LB.tvTex })); scr.position.set(LF2 + 1035 * LP, 18, 152 * LP); sc.add(scr); lbBox([scr.position.x - 18, 23, scr.position.x + 18, 24], 11, 25, 0x1a1a1a, false); scr.position.z = 24.2; }
+  lbBox(lbR(790, 470, 1285, 550, true), 0, 9, 0x5a7ac8, true); lbBox(lbR(790, 520, 1285, 560, true), 9, 20, 0x4a6ab8, false); lbBox(lbR(790, 470, 815, 560, true), 9, 14, 0x4a6ab8, false); lbBox(lbR(1260, 470, 1285, 560, true), 9, 14, 0x4a6ab8, false);
+  for (let i = 0; i < 4; i++) { const f = makeFolkFig({ head: 1, eyes: 1, nose: 1, mouth: 1, arms: 1, legs: 1, chest: 1, color: ['#f0c8a0', '#d8a070', '#f4d8c0', '#a8704a'][i] }, null, false); lbCoat(f); f.scale.setScalar(12); f.position.set(LF2 + (850 + i * 120) * LP, 0, 505 * LP); f.rotation.y = Math.PI; sc.add(f); LB.sci.push(f); }
+  lbBox(lbR(1322, 193, 1597, 343, true), 3, 17, 0xc89a5a, true); lbBox(lbR(1322, 193, 1597, 205, true), 0, 3, 0xc89a5a, true);
+  lbBox(lbR(1786, 0, 1900, 115, true), 0, 17, 0xf4f4f8, true);
+  // bedroom: bed, desk with the computer
+  lbBox(lbR(1363, 377, 1623, 742, true), 0, 10, 0x8a5aa8, true); lbBox(lbR(1385, 395, 1475, 455, true), 10, 13, 0xffffff, false); lbBox(lbR(1495, 395, 1595, 455, true), 10, 13, 0xffffff, false); lbBox(lbR(1365, 470, 1620, 740, true), 10, 11, 0xb88ad8, false);
+  lbTable(lbR(1720, 455, 1850, 742, true), 15, 0x6a4a2a); lbBox(lbR(1775, 545, 1785, 630, true), 15, 26, 0x1a1a1a, false); lbBox(lbR(1785, 550, 1787, 625, true), 16, 25, 0x3a8aff, false, { m: { emissive: 0x0a3a8a } });
+  // ---------- the items ----------
+  const beacon = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color: 0xffe14d, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.8 })); beacon.scale.setScalar(4); sc.add(beacon); LB.beacon = beacon;
+  LB.items.kkey = lbKey(0x9adfff); LB.items.kkey.position.set(7, 0, 6); sc.add(LB.items.kkey); LB.items.kkey.visible = !LAB.kitchenKey;
+  LB.items.egg = S(G.sph, mat(0xfff8e8), 0.8, 1.0, 0.8, 1440 * LP - 3, 1, 523 * LP + 5); sc.add(LB.items.egg); LB.items.egg.visible = LAB.fridge && !LAB.egg;
+  if (LAB.fridge) LB.fridgeDoor.rotation.y = 1.4;
+  LB.items.skey = lbKey(0xffd23a); LB.items.skey.position.set(1440 * LP - 3, 0, 523 * LP + 7); sc.add(LB.items.skey); LB.items.skey.visible = LAB.egg && !LAB.stairsKey;
+  LB.items.yolk = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.1, 16), mat(0xffc81a)); LB.items.yolk.position.set(1440 * LP - 3, 0.05, 523 * LP + 5); sc.add(LB.items.yolk); LB.items.yolk.visible = LAB.egg;
+  { const s = new THREE.Group(), m = mat(0xc8c8d0, { metalness: 0.7, roughness: 0.3 }); s.add(S(G.box, m, 0.1, 0.5, 1.6, 0, 0.3, 0.8)); s.add(S(G.box, mat(0xc8302a), 0.3, 0.5, 0.6, 0, 0.3, -0.2)); for (let i = 0; i < 6; i++) s.add(S(G.cone, m, 0.1, 0.18, 0.1, 0, 0.02, 0.2 + i * 0.25)); s.position.set(LF2 + 1700 * LP, 0, 600 * LP); LB.scene.add(s); LB.items.saw = s; s.visible = !LAB.saw; }
+  { const b = new THREE.Group(); b.add(S(G.box, mat(0xff3a3a), 2.4, 3.2, 0.7, 0, 1.6, 0)); b.add(S(G.box, mat(0xffd23a), 2.0, 0.9, 0.72, 0, 2.0, 0)); b.position.set(LF2 + 1460 * LP, 0, 193 * LP - 3); LB.scene.add(b); LB.items.chips = b; }
+  // ---------- what you can do (E) ----------
+  lbInter({ x: 7, z: 6, r: 4, can: () => !LAB.kitchenKey, label: () => lbL('<kbd>E</kbd> paimti raktą 🔑', '<kbd>E</kbd> take the key 🔑'), act: () => { LAB.kitchenKey = true; saveLab(); LB.items.kkey.visible = false; lbGot(lbL('🔑 Raktas nuo virtuvės durų!', '🔑 The kitchen door key!'), lbL('Virtuvės durys – tyrimų kambaryje', 'The kitchen door is in the research room')); } });
+  lbInter({ x: 138, z: 88, r: 6, can: () => !LAB.kitchenOpen, label: () => LAB.kitchenKey ? lbL('<kbd>E</kbd> atrakinti virtuvės duris', '<kbd>E</kbd> unlock the kitchen door') : lbL('🔒 Užrakinta. Reikia rakto…', '🔒 Locked. You need a key…'), act: () => { if (!LAB.kitchenKey) { lbNo(); return; } LAB.kitchenOpen = true; saveLab(); lbOpenDoor('kitchen'); toast(lbL('Virtuvė atrakinta!', 'Kitchen unlocked!'), lbL('Gal šaldytuve kas nors yra?', 'Maybe there is something in the fridge?'), '#ffd23a'); } });
+  lbInter({ x: 1412 * LP, z: 523 * LP + 4, r: 6, can: () => !LAB.fridge, label: () => lbL('<kbd>E</kbd> atidaryti šaldytuvą', '<kbd>E</kbd> open the fridge'), act: () => { LAB.fridge = true; saveLab(); let a = 0; fx.push(dt => { a = Math.min(1, a + dt * 1.2); LB.fridgeDoor.rotation.y = a * 1.4; return a < 1; }); tone(300, 0.4, { to: 500, type: 'sine', vol: 0.05 }); setTimeout(() => { LB.items.egg.visible = true; noiseHit(0.15, { f: 2000, vol: 0.06 }); toast(lbL('Iš šaldytuvo iškrito kiaušinis! 🥚', 'An egg fell out of the fridge! 🥚'), lbL('Sudaužyk jį (E)', 'Break it (E)'), '#fff8e8'); }, 700); } });
+  lbInter({ x: 1440 * LP - 3, z: 523 * LP + 5, r: 4, can: () => LAB.fridge && !LAB.egg, label: () => lbL('<kbd>E</kbd> sudaužyti kiaušinį 🥚', '<kbd>E</kbd> break the egg 🥚'), act: () => { LAB.egg = true; saveLab(); LB.items.egg.visible = false; LB.items.yolk.visible = true; LB.items.skey.visible = true; noiseHit(0.3, { f: 1500, fto: 400, vol: 0.15 }); toast(lbL('Krekšt! Kiaušinyje – raktas!', 'Crack! A key inside the egg!'), '', '#ffd23a'); } });
+  lbInter({ x: 1440 * LP - 3, z: 523 * LP + 8, r: 4, can: () => LAB.egg && !LAB.stairsKey, label: () => lbL('<kbd>E</kbd> paimti raktą 🔑', '<kbd>E</kbd> take the key 🔑'), act: () => { LAB.stairsKey = true; saveLab(); LB.items.skey.visible = false; lbGot(lbL('🔑 Raktas nuo durų į laiptus!', '🔑 The key to the stairs door!'), lbL('Durys su striukėmis – prieškambaryje', 'The door with the jackets is in the hall')); } });
+  lbInter({ x: 164, z: 29, r: 7, can: () => !LAB.stairsOpen, label: () => LAB.stairsKey ? lbL('<kbd>E</kbd> atrakinti duris į laiptus', '<kbd>E</kbd> unlock the stairs door') : lbL('🔒 Užrakinta. Reikia rakto…', '🔒 Locked. You need a key…'), act: () => { if (!LAB.stairsKey) { lbNo(); return; } LAB.stairsOpen = true; saveLab(); lbOpenDoor('stairs'); toast(lbL('Laiptai atviri!', 'The stairs are open!'), lbL('Eik pro duris – užlipsi į antrą aukštą', 'Go through the door – you climb to the 2nd floor'), '#ffd23a'); } });
+  lbInter({ x: LF2 + 44, z: 18, r: 7, can: () => true, label: () => lbL('<kbd>E</kbd> lipti žemyn ⬇', '<kbd>E</kbd> go downstairs ⬇'), act: () => lbStairs(1) });
+  lbInter({ x: LF2 + 1700 * LP, z: 600 * LP, r: 4, can: () => !LAB.saw, label: () => lbL('<kbd>E</kbd> paimti mini pjūklą 🪚', '<kbd>E</kbd> take the mini saw 🪚'), act: () => { LAB.saw = true; saveLab(); LB.items.saw.visible = false; lbGot(lbL('🪚 Mini pjūklas!', '🪚 A mini saw!'), lbL('Svetainės durų apačia užkalta lenta – išpjauk ją', 'The bottom of the living-room door is covered with a board – saw it')); } });
+  lbInter({ x: LF2 + 740 * LP - 3, z: 124 * LP, r: 7, can: () => !LAB.boardCut, label: () => LAB.saw ? lbL('<kbd>E</kbd> išpjauti lentą 🪚', '<kbd>E</kbd> saw the board 🪚') : lbL('Po durimis užkalta lenta. Reikia pjūklo…', 'A board under the door. You need a saw…'), act: () => { if (!LAB.saw) { lbNo(); return; } lbSaw(); } });
+  lbInter({ x: LF2 + 1460 * LP, z: 193 * LP - 3, r: 5, can: () => !LAB.gotCode, label: () => lbL('<kbd>E</kbd> apžiūrėti traškučių pakelį', '<kbd>E</kbd> look at the chips bag'), act: () => { if (!LAB.code) LAB.code = String(1000 + Math.floor(Math.random() * 9000)); LAB.gotCode = true; saveLab(); startTalk(lbL('Traškučių pakelis', 'Chips bag'), [lbL(`Ant pakelio kažkas užrašė: „MAŽINIMO MAŠINOS KODAS: ${LAB.code}“`, `Someone wrote on the bag: “SHRINKING MACHINE CODE: ${LAB.code}”`), lbL(`Įsimink: ${LAB.code}. Grįžk į tyrimų kambarį (1 aukštas) ir įvesk kodą į mašiną!`, `Remember: ${LAB.code}. Go back to the research room (1st floor) and type the code into the machine!`)], '#ffd23a'); } });
+  lbInter({ x: 115, z: 87, r: 7, can: () => true, label: () => lbL('<kbd>E</kbd> mažinimo mašina – įvesti kodą', '<kbd>E</kbd> shrinking machine – type a code'), act: () => lbCodeOpen() });
+  linearize(sc);
+}
+function lbTable(u, h, color) { const [x0, z0, x1, z1] = u; lbBox([x0, z0, x1, z1], h - 1.2, h, color, false); for (const [x, z] of [[x0 + 1, z0 + 1], [x1 - 1, z0 + 1], [x0 + 1, z1 - 1], [x1 - 1, z1 - 1]]) lbBox([x - 0.9, z - 0.9, x + 0.9, z + 0.9], 0, h - 1.2, color, true); }
+function lbCoat(f) { const c = mat(0xf8f8ff); f.add(S(G.box, c, 0.64, 0.95, 0.4, 0, 1.08, 0)); for (const sx of [-1, 1]) f.add(S(G.box, c, 0.17, 0.55, 0.17, sx * 0.4, 1.22, 0)); const h = f.userData.head; if (h) { const gl = mat(0x111111); for (const sx of [-1, 1]) h.add(S(G.cyl, gl, 0.1, 0.03, 0.1, sx * 0.12, 0.05, 0.29).rotateX(Math.PI / 2)); h.add(S(G.box, gl, 0.06, 0.02, 0.02, 0, 0.05, 0.3)); } }
+function lbGot(a, b) { [784, 988, 1175].forEach((f, i) => tone(f, 0.18, { type: 'triangle', vol: 0.05, when: i * 0.08 })); toast(a, b, '#ffd23a'); }
+function lbNo() { tone(200, 0.2, { to: 140, type: 'square', vol: 0.04, lp: 900 }); }
+function lbSaw() { if (LB.sawing) return; LB.sawing = true; let t = 0; fx.push(dt => { t += dt; if (Math.random() < dt * 14) noiseHit(0.05, { f: 3000, fto: 1500, vol: 0.05 }); if (t >= 1.6) { LB.sawing = false; LAB.boardCut = true; saveLab(); LB.board.m.visible = false; const i = LB.boxes.indexOf(LB.board.b); if (i >= 0) LB.boxes.splice(i, 1);
+      toast(lbL('Lenta išpjauta!', 'The board is cut!'), lbL('Lįsk po durimis. Svetainėje mokslininkai žiūri TV – kai REKLAMA, NEJUDĖK!', 'Crawl under the door. In the living room the scientists watch TV – during an ADVERT, DON’T MOVE!'), '#ffd23a'); return false; } return true; }); }
+function lbStairs(toFloor) { transitioning = true; fadeTo(() => { transitioning = false; if (toFloor === 2) { player.pos.set(LF2 + 50, 0, 45); player.fwd.set(1, 0, 0); } else { player.pos.set(158, 0, 30); player.fwd.set(-1, 0, 0); } player.vel.set(0, 0, 0); player.vr = 0; toast(toFloor === 2 ? lbL('Antras aukštas', '2nd floor') : lbL('Pirmas aukštas', '1st floor'), lbL('Ilgai lipai – laiptai tau milžiniški!', 'That took a while – the stairs are giant for you!'), '#ffd23a'); }); }
+// ---------- the code ----------
+function lbCodeOpen() {
+  if (LB.codeOpen) return; LB.codeOpen = true; card = { kind: 'labcode' }; for (const k in keys) keys[k] = false; try { document.exitPointerLock && document.exitPointerLock(); } catch (_) { }
+  if (!LB.codeEl) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;inset:0;z-index:26;display:flex;align-items:center;justify-content:center;background:rgba(0,10,20,.6)'; d.innerHTML = `<div style="background:#1a2a3a;border:2px solid #5affff;border-radius:18px;padding:20px;color:#fff;font:700 16px system-ui;text-align:center;width:min(340px,90vw)"><div style="font-size:22px;color:#5affff;margin-bottom:8px">🔬 ${lbL('Mažinimo mašina', 'Shrinking machine')}</div><div style="opacity:.8;margin-bottom:10px">${lbL('Įvesk kodą, kad vėl taptum didelis', 'Type the code to become big again')}</div><input data-c inputmode="numeric" maxlength="6" style="font:800 32px monospace;width:160px;text-align:center;border-radius:10px;border:2px solid #5affff;background:#0a1a2a;color:#5affff;padding:6px"><div data-m style="min-height:22px;margin:8px 0;color:#ff8a7a"></div><button data-ok style="border:none;border-radius:10px;padding:8px 18px;background:#5affff;color:#0a2a2a;font:800 16px system-ui;cursor:pointer">OK</button> <button data-x style="border:none;border-radius:10px;padding:8px 18px;background:#ff6a5a;color:#fff;font:800 16px system-ui;cursor:pointer">✕</button></div>`;
+    document.body.appendChild(d); LB.codeEl = d; const inp = d.querySelector('[data-c]');
+    inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') lbCodeTry(); if (e.key === 'Escape') lbCodeClose(); }); d.addEventListener('mousedown', e => e.stopPropagation());
+    d.querySelector('[data-ok]').onclick = lbCodeTry; d.querySelector('[data-x]').onclick = lbCodeClose; }
+  LB.codeEl.hidden = false; const inp = LB.codeEl.querySelector('[data-c]'); inp.value = ''; LB.codeEl.querySelector('[data-m]').textContent = LAB.gotCode ? '' : lbL('Kodo dar nežinai… Gal jis kur nors antrame aukšte?', 'You don’t know the code yet… Maybe it is somewhere upstairs?'); setTimeout(() => inp.focus(), 50);
+}
+function lbCodeClose() { LB.codeOpen = false; if (LB.codeEl) LB.codeEl.hidden = true; card = null; if (!lockFailed) try { requestLock(); } catch (_) { } }
+function lbCodeTry() {
+  const v = LB.codeEl.querySelector('[data-c]').value.trim();
+  if (!LAB.code || v !== LAB.code) { LB.codeEl.querySelector('[data-m]').textContent = lbL('❌ Neteisingas kodas', '❌ Wrong code'); tone(160, 0.3, { to: 100, type: 'square', vol: 0.05, lp: 800 }); return; }
+  lbCodeClose(); lbGrow();
+}
+function lbGrow() {
+  transitioning = true; [262, 330, 392, 523, 659, 784].forEach((f, i) => tone(f, 0.25, { type: 'sine', vol: 0.06, when: i * 0.12 }));
+  redFlash('rgba(150,255,255,.7)', 900);
+  fadeTo(() => { transitioning = false; bigBanner(lbL('TU VĖL DIDELIS! 💪', 'YOU ARE BIG AGAIN! 💪'), lbL('Eik pas mokslininkus…', 'Go to the scientists…'));
+    setTimeout(() => startTalk(lbL('Mokslininkai', 'The scientists'), [lbL('K-K-KAIP?! Tu vėl DIDELIS?!', 'H-H-HOW?! You are BIG again?!'), lbL('Tu radai kodą ant mūsų traškučių pakelio… Mes pasiduodame!', 'You found the code on our chips bag… We give up!'), lbL('Štai tavo DIEVO GALIOS – mes jas grąžiname.', 'Here are your GOD POWERS – we give them back.'), lbL('Ir pažadėti 50 000 €. Tik niekam nesakyk apie mūsų mašiną!', 'And the promised 50 000 €. Just don’t tell anyone about our machine!')], '#5affff', () => {
+      LAB.stage = 'done'; saveLab(); addMoney(50000); bigBanner(lbL('👑 GALIOS GRĄŽINTOS!', '👑 POWERS RETURNED!'), lbL('+50 000 € · Grįžti į planetą', '+50 000 € · Back to the planet'));
+      setTimeout(() => { transitioning = true; fadeTo(() => { transitioning = false; lbHide(); portalToPlanet(); }); }, 2500); }), 2200); });
+}
+// ---------- the scientists come (on the planet) ----------
+const LAB_WAIT = 2 * 60 * 1000;
+function lbOffer() {
+  LAB.stage = 'offer'; saveLab(); const up = player.up.clone().normalize(), f = player.fwd.clone().addScaledVector(up, -player.fwd.dot(up)).normalize(), rt = new V3().crossVectors(f, up).normalize(); const figs = [];
+  for (let i = 0; i < 4; i++) { const g = makeFolkFig({ head: 1, eyes: 1, nose: 1, mouth: 1, arms: 1, legs: 1, chest: 1, color: ['#f0c8a0', '#d8a070', '#f4d8c0', '#a8704a'][i] }, null, false); lbCoat(g);
+    const d = player.pos.clone().addScaledVector(f, 4).addScaledVector(rt, (i - 1.5) * 1.4).normalize(); g.position.copy(d).multiplyScalar(R + groundH(d)); orient(g, d, tangentToward(d, player.pos)); world.add(g); figs.push(g); }
+  [330, 392, 494].forEach((fq, i) => tone(fq, 0.3, { type: 'triangle', vol: 0.05, when: i * 0.15 }));
+  startTalk(lbL('4 mokslininkai', '4 scientists'), [lbL('Sveikas, dieve! Mes – keturi mokslininkai. 🔬', 'Hello, god! We are four scientists. 🔬'), lbL('Turime tau darbą. Kokį – pasakysime vėliau. Sumokėsime 50 000 €!', 'We have a job for you. What job – we’ll tell you later. We’ll pay 50 000 €!'), lbL('Atsisakyti negalima. Tu PRIVALAI sutikti.', 'You can’t say no. You MUST accept.'), lbL('Puiku, tu sutinki! Eime į mūsų namus…', 'Great, you accept! Let’s go to our house…')], '#5affff', () => {
+    transitioning = true; fadeTo(() => { transitioning = false; figs.forEach(g => world.remove(g)); LAB.stage = 'lab'; if (!LAB.code) LAB.code = String(1000 + Math.floor(Math.random() * 9000)); saveLab(); enterLab(true); }); });
+}
+fx.push(() => {
+  if (!started || mode !== 'planet' || card || cinema || transitioning) return true;
+  if (LAB.stage === 'offer') { lbOffer(); return true; }
+  if (LAB.stage !== 'none' || typeof FAM === 'undefined' || FAM.stage !== 'won' || GOD.stage !== 'god') return true;
+  if (!LAB.t0) { LAB.t0 = Date.now(); saveLab(); return true; }
+  if (Date.now() - LAB.t0 > LAB_WAIT) lbOffer();
+  return true;
+});
+// ---------- in the house ----------
+function enterLab(intro) {
+  buildLab(); if (typeof closeWorldPortal === 'function') closeWorldPortal(); setScope(false); if (player.inCar && typeof onCar === 'function') onCar();
+  mode = 'lab'; LB.scene.add(player.mesh); player.mesh.visible = true; player.up.set(0, 1, 0);
+  player.pos.set(112, 0, 96); player.fwd.set(0, 0, 1); player.vel.set(0, 0, 0); player.vr = 0; player.pitch = 0.12; camera.up.set(0, 1, 0); camera.position.set(112, 6, 104); musicSet(3);
+  $('bName').textContent = lbL('Mokslininkų namai', 'The scientists’ house'); $('bEn').textContent = lbL('Tu mažytis kaip voras', 'You are tiny like a spider'); $('bAtm').textContent = lbL('Pabėk ir vėl tapk didelis!', 'Escape and become big again!'); document.documentElement.style.setProperty('--biome', '#5affff');
+  if (intro) setTimeout(() => { startTalk(lbL('Mokslininkai', 'The scientists'), [lbL('Štai mūsų namai. Eime į tyrimų kambarį…', 'Here is our house. Let’s go to the research room…'), lbL('Atsistok į šitą mašiną. Nebijok, nieko neskaudės…', 'Stand in this machine. Don’t be afraid, it won’t hurt…'), lbL('BZZZZZT! ⚡⚡⚡', 'BZZZZZT! ⚡⚡⚡'), lbL('Ha ha ha! Dabar tu MAŽESNIS UŽ PELĘ – kaip mažas voras!', 'Ha ha ha! Now you are SMALLER THAN A MOUSE – like a little spider!'), lbL('O mašina iš tavęs PAVOGĖ DIEVO GALIAS. Jos dabar mūsų!', 'And the machine STOLE YOUR GOD POWERS. They are ours now!'), lbL('Mes tave APGAVOME! Jokių 50 000 €. Ha ha ha!', 'We TRICKED you! No 50 000 €. Ha ha ha!')], '#ff5a5a', () => {
+      bigBanner(lbL('JIE TAVE APGAVO! 😠', 'THEY TRICKED YOU! 😠'), lbL('Pabėk ir vėl tapk didelis. Pirmiausia – rask raktą nuo virtuvės durų', 'Escape and become big again. First find the kitchen door key')); }); }, 700);
+  setTimeout(() => { redFlash('rgba(150,255,255,.6)', 500); }, 600);
+}
+function lbHide() { if (LB.hud) LB.hud.hidden = true; }
+function lbTarget() {
+  if (!LAB.kitchenKey) return [7, 6]; if (!LAB.kitchenOpen) return [138, 88]; if (!LAB.fridge) return [1412 * LP, 523 * LP + 3]; if (!LAB.egg) return [1440 * LP - 3, 523 * LP + 5]; if (!LAB.stairsKey) return [1440 * LP - 3, 523 * LP + 8];
+  if (!LAB.stairsOpen) return [164, 29]; if (!LAB.saw) return [LF2 + 1700 * LP, 600 * LP]; if (!LAB.boardCut) return [LF2 + 740 * LP - 3, 124 * LP]; if (!LAB.gotCode) return [LF2 + 1460 * LP, 193 * LP - 3]; return [115, 87];
+}
+function lbGoal() {
+  if (!LAB.kitchenKey) return lbL('Rask raktą nuo virtuvės durų… gal tualete? 🛁', 'Find the kitchen door key… maybe in the bathroom? 🛁');
+  if (!LAB.kitchenOpen) return lbL('Atrakink virtuvės duris (tyrimų kambaryje)', 'Unlock the kitchen door (in the research room)');
+  if (!LAB.egg) return lbL('Virtuvėje – šaldytuvas. Gal kiaušinyje kas nors yra? 🥚', 'The kitchen has a fridge. Maybe something is in an egg? 🥚');
+  if (!LAB.stairsKey) return lbL('Paimk raktą iš kiaušinio', 'Take the key from the egg');
+  if (!LAB.stairsOpen) return lbL('Atrakink duris į laiptus (prieškambaryje, su striukėmis)', 'Unlock the stairs door (in the hall, with the jackets)');
+  if (!LAB.saw) return lbL('Antras aukštas: miegamajame prie kompiuterio – mini pjūklas 🪚', '2nd floor: in the bedroom by the computer – a mini saw 🪚');
+  if (!LAB.boardCut) return lbL('Išpjauk lentą po svetainės durimis', 'Saw the board under the living-room door');
+  if (!LAB.gotCode) return lbL('Užkandžių spintelė svetainėje – traškučių pakelis. Per REKLAMĄ – NEJUDĖK! 📺', 'Snack cabinet in the living room – the chips bag. During an ADVERT – DON’T MOVE! 📺');
+  return lbL(`Kodas ${LAB.code}. Grįžk prie mažinimo mašinos (1 aukštas) ir įvesk jį`, `Code ${LAB.code}. Go back to the shrinking machine (1st floor) and type it`);
+}
+function lbTv(dt) {
+  LB.tvLeft -= dt; const was = LB.tvState;
+  if (LB.tvLeft <= 0) { if (LB.tvState === 'ad') { LB.tvState = 'show'; LB.tvLeft = 6 + Math.random() * 4; } else { LB.tvState = 'ad'; LB.tvLeft = 4; LB.adGrace = 0.6; } }
+  if (was !== LB.tvState && lbInLiving()) { if (LB.tvState === 'ad') { toast(lbL('📺 REKLAMA! NEJUDĖK!', '📺 ADVERT! DON’T MOVE!'), lbL('Mokslininkai dairosi aplink…', 'The scientists look around…'), '#ff5a5a'); tone(880, 0.15, { type: 'square', vol: 0.05 }); tone(660, 0.15, { type: 'square', vol: 0.05, when: 0.18 }); } else toast(lbL('📺 Filmas tęsiasi – gali judėti', '📺 The film goes on – you can move'), '', '#9aff7a'); }
+  LB.tvDraw -= dt; if (LB.tvDraw > 0 && was === LB.tvState) return; LB.tvDraw = 0.15;
+  const x = LB.tvX, t = T;
+  if (LB.tvState === 'ad') { x.fillStyle = Math.sin(t * 8) > 0 ? '#c8202a' : '#e83a2a'; x.fillRect(0, 0, 256, 144); x.fillStyle = '#ffe14d'; x.font = 'bold 44px sans-serif'; x.textAlign = 'center'; x.fillText(lbL('REKLAMA', 'ADVERT'), 128, 70); x.font = 'bold 22px sans-serif'; x.fillStyle = '#fff'; x.fillText(lbL('PIRK TRAŠKUČIUS!', 'BUY CHIPS!'), 128, 110); }
+  else { x.fillStyle = '#5ab8ff'; x.fillRect(0, 0, 256, 144); x.fillStyle = '#5ac84a'; x.fillRect(0, 105, 256, 39); x.fillStyle = '#ffd23a'; x.beginPath(); x.arc(220, 30, 18, 0, 7); x.fill(); const bx = 128 + Math.sin(t * 2) * 80, by = 90 - Math.abs(Math.sin(t * 5)) * 30; x.fillStyle = '#ff7a3a'; x.beginPath(); x.arc(bx, by, 14, 0, 7); x.fill(); x.fillStyle = '#fff'; x.beginPath(); x.arc(bx + 5, by - 4, 4, 0, 7); x.fill(); x.fillStyle = '#111'; x.beginPath(); x.arc(bx + 6, by - 4, 2, 0, 7); x.fill(); if (LB.tvLeft < 1.5) { x.fillStyle = 'rgba(0,0,0,.6)'; x.fillRect(0, 0, 256, 24); x.fillStyle = '#ffe14d'; x.font = 'bold 16px sans-serif'; x.textAlign = 'center'; x.fillText(lbL('Tuoj reklama…', 'Advert coming…'), 128, 17); } }
+  LB.tvTex.needsUpdate = true;
+}
+const lbInLiving = () => player.pos.x > LF2 + 740 * LP + 1 && player.pos.z < 570 * LP && !(player.pos.x > LF2 + 1320 * LP && player.pos.z > 345 * LP);
+function updateLab(dt, t) {
+  const fl2 = player.pos.x > 350;
+  walkFlat(dt, fl2 ? { boxes: LB.boxes, x0: LF2, x1: LF2 + 1900 * LP, z0: 0, z1: 807 * LP, H: LH, camDist: 9, speed: 2.2 } : { boxes: LB.boxes, x0: 0, x1: 1620 * LP, z0: 0, z1: 770 * LP, H: LH, camDist: 9, speed: 2.2 });
+  // climb the stairs (through the open stairs door)
+  if (!fl2 && LAB.stairsOpen && player.pos.x > 173 && player.pos.z < 62 && !transitioning) lbStairs(2);
+  lbTv(dt);
+  // the scientists: they watch TV; during an advert they look around – if you move in the living room, they catch you
+  const ad = LB.tvState === 'ad'; LB.adGrace -= dt;
+  LB.sci.forEach((f, i) => { const h = f.userData.head; if (h) h.rotation.y = ad ? Math.sin(t * 1.5 + i * 1.3) * 1.1 : Math.sin(t * 0.4 + i) * 0.1; });
+  if (ad && LB.adGrace <= 0 && lbInLiving() && Math.hypot(player.vel.x, player.vel.z) > 1.2 && !card && !transitioning) {
+    redFlash('rgba(255,40,40,.45)', 400); tone(300, 0.3, { to: 150, type: 'sawtooth', vol: 0.06, lp: 900 });
+    toast(lbL('😱 Mokslininkas tave pamatė!', '😱 A scientist saw you!'), lbL('Jis išmetė tave atgal pro duris. Per reklamą – NEJUDĖK!', 'He threw you back out through the door. During an advert – DON’T MOVE!'), '#ff5a5a');
+    player.pos.set(LF2 + 740 * LP - 8, 0, 124 * LP); player.vel.set(0, 0, 0); }
+  // the shrinking machine glows
+  if (LB.ring) LB.ring.rotation.z += dt; if (LB.tube) LB.tube.material.opacity = 0.3 + Math.sin(t * 3) * 0.08;
+  // the target light
+  const [bx, bz] = lbTarget(); LB.beacon.position.set(bx, 3 + Math.sin(t * 3) * 0.6, bz); LB.beacon.visible = !card;
+  if (LB.items.kkey.visible) LB.items.kkey.rotation.y += dt * 2; if (LB.items.skey.visible) LB.items.skey.rotation.y += dt * 2;
+  // what you can do here
+  { const n = !card && lbNear(); setPrompt(n ? n.label() : ''); }
+  // HUD
+  if (!LB.hud) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:6;background:rgba(10,20,40,.82);border:1px solid rgba(90,255,255,.6);border-radius:14px;padding:6px 14px;font:700 14px system-ui;color:#fff;pointer-events:none;text-align:center;max-width:min(560px,90vw)'; document.body.appendChild(d); LB.hud = d; }
+  LB.hud.hidden = false; const s = `🔬 ${lbGoal()}${lbInLiving() ? ` <span style="color:${ad ? '#ff5a5a' : '#9aff7a'}">· 📺 ${ad ? lbL('REKLAMA – NEJUDĖK!', 'ADVERT – DON’T MOVE!') : lbL('filmas – gali judėti', 'film – you can move')}</span>` : ''}`; if (LB.hud.dataset.s !== s) { LB.hud.dataset.s = s; LB.hud.innerHTML = s; }
+}
+function lbNear() { let b = null, bd = 1e9; for (const o of LB.inter) { if (!o.can()) continue; const d = Math.hypot(player.pos.x - o.x, player.pos.z - o.z); if (d < o.r && d < bd) { bd = d; b = o; } } return b; }
+fx.push(() => { if (mode !== 'lab' && LB.hud) LB.hud.hidden = true; return true; });
+// keys in the house: E acts; the god powers are stolen; no cars, phone, portals…
+addEventListener('keydown', e => {
+  if (mode !== 'lab' || !started || LB.codeOpen) return;
+  if (e.code === 'KeyE' && !card && !e.repeat) { e.stopImmediatePropagation(); e.preventDefault(); const n = lbNear(); if (n) n.act(); return; }
+  if (/^Digit[1-5]$/.test(e.code) && !card) { e.stopImmediatePropagation(); e.preventDefault(); if (!e.repeat) toast(lbL('Galios pavogtos! 😠', 'Your powers were stolen! 😠'), lbL('Mašina jas atėmė. Atgausi, kai vėl būsi didelis', 'The machine took them. You get them back when you are big again'), '#ff5a5a'); return; }
+  if (/^(Digit\d|Key[FRTXBIPQJOUKLZC])$/.test(e.code)) { e.stopImmediatePropagation(); e.preventDefault(); }
+}, true);
+{ const _d = doTeleport; doTeleport = (...a) => { if (mode === 'lab') return; return _d(...a); }; }
+// after a reload you are still tiny in the house
+{ const _st = startGame; startGame = (...a) => { const r = _st(...a); if (LAB.stage === 'lab') setTimeout(() => { try { hideCard(); enterLab(false); toast(lbL('Tu vis dar mažytis!', 'You are still tiny!'), lbGoal(), '#5affff'); } catch (e) { console.error(e); } }, 900); return r; }; }
+// achievement
+setTimeout(() => { try { if (typeof ACH !== 'undefined') ACH.push({ id: 'lab', ic: '🔬', lt: 'Ne toks jau mažas', en: 'Not so small after all', dlt: 'Pabėk iš mokslininkų namų ir atgauk dievo galias', den: 'Escape from the scientists’ house and get your god powers back', ok: () => LAB.stage === 'done' }); } catch (_) { } }, 0);
+// test helper (bandymams)
+window.labTest = n => { LAB = Object.assign(LAB, { stage: 'lab', kitchenKey: n >= 1, kitchenOpen: n >= 2, fridge: n >= 3, egg: n >= 3, stairsKey: n >= 3, stairsOpen: n >= 4, saw: n >= 5, boardCut: n >= 6, gotCode: n >= 7, code: LAB.code || '1234' }); saveLab(); hideCard(); enterLab(n === 0); };
+// E in the house never falls through to the planet's things (kiosks…)
+{ const _o = onInspect; onInspect = (...a) => { if (mode === 'lab') { if (card && card.kind === 'talk') advanceTalk(); else if (card && card.kind !== 'labcode') hideCard(); return; } return _o(...a); }; }
 </script>
 </html>
