@@ -19476,7 +19476,7 @@ function buildLab() {
   lbInter({ x: LF2 + 280, z: 108, y: 15, r: 4.5, can: () => !LAB.saw, label: () => lbL('<kbd>E</kbd> paimti mini pjūklą 🪚', '<kbd>E</kbd> take the mini saw 🪚'), act: () => { LAB.saw = true; saveLab(); LB.items.saw.visible = false; lbGot(lbL('🪚 Mini pjūklas!', '🪚 A mini saw!'), ''); } });
   lbInter({ x: LF2 + 740 * LP - 3, z: 124 * LP, r: 7, can: () => !LAB.boardCut, label: () => LAB.saw ? lbL('<kbd>E</kbd> išpjauti lentą 🪚', '<kbd>E</kbd> saw the board 🪚') : lbL('Po durimis užkalta lenta. Reikia pjūklo…', 'A board under the door. You need a saw…'), act: () => { if (!LAB.saw) { lbNo(); return; } lbSaw(); } });
   lbInter({ x: LF2 + 228, z: 42, y: 17, r: 5, can: () => !LAB.gotCode, label: () => lbL('<kbd>E</kbd> apžiūrėti traškučių pakelį', '<kbd>E</kbd> look at the chips bag'), act: () => { if (!LAB.code) LAB.code = String(1000 + Math.floor(Math.random() * 9000)); LAB.gotCode = true; saveLab(); startTalk(lbL('Traškučių pakelis', 'Chips bag'), [lbL(`Ant pakelio kažkas užrašė: „MAŽINIMO MAŠINOS KODAS: ${LAB.code}“`, `Someone wrote on the bag: “SHRINKING MACHINE CODE: ${LAB.code}”`)], '#ffd23a'); } });
-  lbInter({ x: 129, z: 86, y: 11.5, yr: 3.5, r: 6, can: () => true, label: () => lbL('<kbd>E</kbd> mažinimo mašinos pultas – įvesti kodą', '<kbd>E</kbd> shrinking machine panel – type a code'), act: () => lbCodeOpen() });
+  lbInter({ x: 129, z: 86, y: 11.5, yr: 3.5, r: 6, can: () => true, label: () => lbL('<kbd>E</kbd> mažinimo mašinos pultas – įvesti kodą', '<kbd>E</kbd> shrinking machine panel – type a code'), act: () => { if (!LB.big) lbCodeOpen(); } });
   lbJunk(20, 2, 98, 62, 18); lbJunk(100, 2, 168, 44, 12); lbJunk(16, 66, 140, 122, 22); lbJunk(144, 66, 236, 122, 18); lbJunk(LF2 + 40, 36, LF2 + 98, 128, 16); lbJunk(LF2 + 120, 2, LF2 + 300, 90, 14); lbJunk(LF2 + 120, 92, LF2 + 300, 128, 14);
   linearize(sc);
 }
@@ -19504,10 +19504,50 @@ function lbCodeTry() {
 function lbGrow() {
   transitioning = true; [262, 330, 392, 523, 659, 784].forEach((f, i) => tone(f, 0.25, { type: 'sine', vol: 0.06, when: i * 0.12 }));
   redFlash('rgba(150,255,255,.7)', 900);
-  fadeTo(() => { transitioning = false; bigBanner(lbL('TU VĖL DIDELIS! 💪', 'YOU ARE BIG AGAIN! 💪'), lbL('Eik pas mokslininkus…', 'Go to the scientists…'));
-    setTimeout(() => startTalk(lbL('Mokslininkai', 'The scientists'), [lbL('K-K-KAIP?! Tu vėl DIDELIS?!', 'H-H-HOW?! You are BIG again?!'), lbL('Tu radai kodą ant mūsų traškučių pakelio… Mes pasiduodame!', 'You found the code on our chips bag… We give up!'), lbL('Štai tavo DIEVO GALIOS – mes jas grąžiname.', 'Here are your GOD POWERS – we give them back.'), lbL('Ir pažadėti 50 000 €. Tik niekam nesakyk apie mūsų mašiną!', 'And the promised 50 000 €. Just don’t tell anyone about our machine!')], '#5affff', () => {
-      LAB.stage = 'done'; saveLab(); addMoney(50000); bigBanner(lbL('👑 GALIOS GRĄŽINTOS!', '👑 POWERS RETURNED!'), lbL('+50 000 € · Grįžti į planetą', '+50 000 € · Back to the planet'));
-      setTimeout(() => { transitioning = true; fadeTo(() => { transitioning = false; lbHide(); portalToPlanet(); }); }, 2500); }), 2200); });
+  fadeTo(() => { transitioning = false; LAB.big = true; saveLab(); lbMakeBig(); bigBanner(lbL('TU VĖL DIDELIS! 💪', 'YOU ARE BIG AGAIN! 💪'), lbL('Bet tavo galios vis dar pas mokslininkus…', 'But your powers are still with the scientists…')); });
+}
+// ---------- big again: you are a normal-size man in the house now ----------
+const LB_BIG = 13;
+function lbMakeBig() {
+  LB.big = true; LB.meet = false; LB.carry = null; hands.L.hold = hands.R.hold = false; player.mesh.scale.setScalar(LB_BIG); player.vel.set(0, 0, 0); player.vr = 0;
+  // grow out of the machine's tube into the research room
+  if (player.pos.x < 350) { player.pos.set(108, 0, 100); player.fwd.set(1, 0, 0); }
+  shake = Math.max(shake || 0, 0.6); noiseHit(0.5, { f: 200, fto: 60, vol: 0.2 }); LB.cam = null;
+}
+function lbMakeSmall() { LB.big = false; player.mesh.scale.setScalar(1); }
+function lbBigUpdate(dt, t) {
+  const fl2 = player.pos.x > 350, f = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), s = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), go = !card && !transitioning && !LB.meet;
+  const rt = new V3().crossVectors(player.fwd, UP), mv = new V3().copy(player.fwd).multiplyScalar(go ? f : 0).addScaledVector(rt, go ? s : 0); if (mv.lengthSq() > 1) mv.normalize();
+  const sp = keys.ShiftLeft || keys.ShiftRight ? 42 : 24; mv.multiplyScalar(sp); mv.y = 0;
+  player.vel.lerp(mv, Math.min(1, 10 * dt)); player.pos.addScaledVector(player.vel, dt);
+  if (go && keys.Space && player.grounded) { player.vr = 12; player.grounded = false; try { sfx.jump(); } catch (_) { } }
+  player.vr -= GRAV * dt; player.pos.y += player.vr * dt; if (player.pos.y <= 0) { if (!player.grounded) { shake = Math.max(shake || 0, 0.15); } player.pos.y = 0; player.vr = 0; player.grounded = true; }
+  // a big man steps over books, chairs and tables – only walls and big furniture stop him
+  const rad = 2.2; for (const b of LB.boxes) { if (!(b.h === undefined || b.h >= 25) || (b.y0 !== undefined && b.y0 > 20)) continue; const dx = player.pos.x - b.x, dz = player.pos.z - b.z, ex = b.hx + rad - Math.abs(dx), ez = b.hz + rad - Math.abs(dz); if (ex <= 0 || ez <= 0) continue; if (ex < ez) player.pos.x += dx < 0 ? -ex : ex; else player.pos.z += dz < 0 ? -ez : ez; }
+  const [x0, x1, z1] = fl2 ? [LF2, LF2 + 1900 * LP, 807 * LP] : [0, 1620 * LP, 770 * LP]; player.pos.x = clamp(player.pos.x, x0 + rad, x1 - rad); player.pos.z = clamp(player.pos.z, rad, z1 - rad);
+  player.mesh.rotation.set(0, 0, 0); player.mesh.position.copy(player.pos); orient(player.mesh, UP, player.fwd); animateMan(dt, go && (f !== 0 || s !== 0), sp / 5);
+  // camera behind a big man (bumps only into walls)
+  { const dist = 34, pitch = player.pitch, head = player.pos.clone().add(new V3(0, 1.4 * LB_BIG, 0)); let want = head.clone().addScaledVector(UP, Math.sin(pitch) * dist).addScaledVector(player.fwd, -Math.cos(pitch) * dist * (frontView ? -1 : 1));
+    for (let k = 1; k <= 12; k++) { const q = head.clone().lerp(want, k / 12); if (LB.boxes.some(b => b.h === undefined && Math.abs(q.x - b.x) < b.hx + 0.6 && Math.abs(q.z - b.z) < b.hz + 0.6)) { want = head.clone().lerp(want, Math.max(0, (k - 1.5) / 12)); break; } }
+    want.y = clamp(want.y, 2, LH - 1); if (!LB.cam || LB.cam.distanceTo(want) > 60) LB.cam = want.clone(); else LB.cam.lerp(want, Math.min(1, dt * 8)); camera.position.copy(LB.cam); camera.up.set(0, 1, 0); camera.lookAt(head); }
+  if (!fl2 && player.pos.x > 173 && player.pos.z < 62 && !transitioning) lbStairs(2);
+  lbTv(dt); if (LB.ring) LB.ring.rotation.z += dt;
+  // the scientists: they see you when you come into the living room
+  const cx = LF2 + 1030 * LP, cz = 505 * LP, dSci = Math.hypot(player.pos.x - cx, player.pos.z - cz);
+  LB.sci.forEach((g, i) => { const h = g.userData.head; if (LB.meet) { g.rotation.y = Math.atan2(player.pos.x - g.position.x, player.pos.z - g.position.z); g.position.y = Math.abs(Math.sin(t * 9 + i)) * 0.8; if (h) h.rotation.y = 0; } else if (h) h.rotation.y = LB.tvState === 'ad' ? Math.sin(t * 1.5 + i * 1.3) * 1.1 : Math.sin(t * 0.4 + i) * 0.1; });
+  if (!LB.meet && !card && !transitioning && lbInLiving() && dSci < 70) lbMeet();
+  setPrompt(''); if (LB.beacon) LB.beacon.visible = false;
+  if (LB.hud) { LB.hud.hidden = false; const s2 = '💪 ' + lbL('Tu vėl didelis', 'You are big again'); if (LB.hud.dataset.s !== s2) { LB.hud.dataset.s = s2; LB.hud.innerHTML = s2; } }
+}
+function lbMeet() {
+  LB.meet = true; player.vel.set(0, 0, 0); for (const k in keys) keys[k] = false;
+  [880, 660, 440].forEach((f, i) => tone(f, 0.2, { type: 'square', vol: 0.05, when: i * 0.12 })); shake = Math.max(shake || 0, 0.3);
+  // look at the scientists
+  player.fwd.set(LF2 + 1030 * LP - player.pos.x, 0, 505 * LP - player.pos.z).normalize();
+  setTimeout(() => startTalk(lbL('Mokslininkai', 'The scientists'), [lbL('A-A-AAA! K-K-KAIP?! Tu vėl DIDELIS?!', 'A-A-AAH! H-H-HOW?! You are BIG again?!'), lbL('Tu radai kodą ant mūsų traškučių pakelio… Mes pasiduodame!', 'You found the code on our chips bag… We give up!'), lbL('Štai tavo DIEVO GALIOS – mes jas grąžiname.', 'Here are your GOD POWERS – we give them back.'), lbL('Ir pažadėti 50 000 €. Tik niekam nesakyk apie mūsų mašiną!', 'And the promised 50 000 €. Just don’t tell anyone about our machine!')], '#5affff', () => {
+    LAB.stage = 'done'; LAB.big = false; saveLab(); addMoney(50000); redFlash('rgba(255,230,120,.6)', 700); [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.3, { type: 'triangle', vol: 0.06, when: i * 0.12 }));
+    bigBanner(lbL('👑 GALIOS GRĄŽINTOS!', '👑 POWERS RETURNED!'), lbL('+50 000 € · Grįžti į planetą', '+50 000 € · Back to the planet'));
+    setTimeout(() => { transitioning = true; fadeTo(() => { transitioning = false; lbMakeSmall(); LB.meet = false; lbHide(); portalToPlanet(); }); }, 2500); }), 900);
 }
 // ---------- the scientists come (on the planet) ----------
 const LAB_WAIT = 2 * 60 * 1000;
@@ -19595,6 +19635,7 @@ function lbTv(dt) {
 }
 const lbInLiving = () => player.pos.x > LF2 + 740 * LP + 1 && player.pos.z < 570 * LP && !(player.pos.x > LF2 + 1320 * LP && player.pos.z > 345 * LP);
 function updateLab(dt, t) {
+  if (LB.big) { lbBigUpdate(dt, t); return; }
   const fl2 = player.pos.x > 350;
   // you are tiny – you jump much higher (but you can't fly here!)
   if (keys.Space && player.grounded && !player.down && !card) { player.vr = 11; player.grounded = false; try { sfx.jump(); } catch (_) { } }
@@ -19650,18 +19691,18 @@ addEventListener('keydown', e => {
 }, true);
 { const _d = doTeleport; doTeleport = (...a) => { if (mode === 'lab') return; return _d(...a); }; }
 // after a reload you are still tiny in the house
-{ const _st = startGame; startGame = (...a) => { const r = _st(...a); if (LAB.stage === 'lab') setTimeout(() => { try { hideCard(); enterLab(false); toast(lbL('Tu vis dar mažytis!', 'You are still tiny!'), '', '#5affff'); } catch (e) { console.error(e); } }, 900); return r; }; }
+{ const _st = startGame; startGame = (...a) => { const r = _st(...a); if (LAB.stage === 'lab') setTimeout(() => { try { hideCard(); enterLab(false); if (LAB.big) lbMakeBig(); toast(lbL('Tu vis dar mažytis!', 'You are still tiny!'), '', '#5affff'); } catch (e) { console.error(e); } }, 900); return r; }; }
 // achievement
 setTimeout(() => { try { if (typeof ACH !== 'undefined') ACH.push({ id: 'lab', ic: '🔬', lt: 'Ne toks jau mažas', en: 'Not so small after all', dlt: 'Pabėk iš mokslininkų namų ir atgauk dievo galias', den: 'Escape from the scientists’ house and get your god powers back', ok: () => LAB.stage === 'done' }); } catch (_) { } }, 0);
 // test helper (bandymams)
-window.labTest = n => { LAB = Object.assign(LAB, { stage: 'lab', kitchenKey: n >= 1, kitchenOpen: n >= 2, fridge: n >= 3, egg: n >= 3, stairsKey: n >= 3, stairsOpen: n >= 4, saw: n >= 5, boardCut: n >= 6, gotCode: n >= 7, code: LAB.code || '1234' }); saveLab(); hideCard(); enterLab(n === 0); };
+window.labTest = n => { LAB = Object.assign(LAB, { stage: 'lab', kitchenKey: n >= 1, kitchenOpen: n >= 2, fridge: n >= 3, egg: n >= 3, stairsKey: n >= 3, stairsOpen: n >= 4, saw: n >= 5, boardCut: n >= 6, gotCode: n >= 7, big: n >= 8, code: LAB.code || '1234' }); saveLab(); hideCard(); lbMakeSmall(); enterLab(n === 0); if (n >= 8) lbMakeBig(); };
 // E in the house never falls through to the planet's things (kiosks…)
 { const _o = onInspect; onInspect = (...a) => { if (mode === 'lab') { if (card && card.kind === 'talk') advanceTalk(); else if (card && card.kind !== 'labcode' && card.kind !== 'dino') hideCard(); return; } return _o(...a); }; }
 // start the scientists' house again from the very beginning (used by a gift)
 function lbReset() { if (!LB.built) return; for (let i = LB.scene.children.length - 1; i >= 0; i--) LB.scene.remove(LB.scene.children[i]); Object.assign(LB, { built: false, cabs: {}, eggs: [], carry: null, keyInter: null, boxes: [], inter: [], doors: {}, sci: [], items: {}, coins: [], vacs: [], traps: [], cat: null, cam: null, board: null, tvState: 'show', tvLeft: 7 }); }
 function labRestart() {
-  LAB = Object.assign(LAB, { stage: 'lab', kitchenKey: false, kitchenOpen: false, fridge: false, egg: false, stairsKey: false, stairsOpen: false, saw: false, boardCut: false, gotCode: false, eggPos: null, coins: [], code: String(1000 + Math.floor(Math.random() * 9000)) }); saveLab();
-  try { while (talk) advanceTalk(); } catch (_) { } hideCard(); lbReset(); transitioning = true; fadeTo(() => { transitioning = false; enterLab(true); });
+  LAB = Object.assign(LAB, { stage: 'lab', kitchenKey: false, kitchenOpen: false, fridge: false, egg: false, stairsKey: false, stairsOpen: false, saw: false, boardCut: false, gotCode: false, eggPos: null, big: false, coins: [], code: String(1000 + Math.floor(Math.random() * 9000)) }); saveLab();
+  try { while (talk) advanceTalk(); } catch (_) { } hideCard(); lbMakeSmall(); lbReset(); transitioning = true; fadeTo(() => { transitioning = false; enterLab(true); });
 }
 // ================= the scientists' computer: "no internet" – the dinosaur jumps over cacti 🦖 =================
 // Upstairs on the desk (climb over the bed). E turns it on. Space / ↑ / click = jump, ↓ = duck, Esc = turn off.
@@ -19736,5 +19777,7 @@ addEventListener('keyup', e => { if (!DN.open) return; if (e.code === 'ArrowDown
 addEventListener('mousedown', e => { if (!DN.open) return; e.stopImmediatePropagation(); dnJump(); }, true);
 fx.push(() => { if (DN.open && mode !== 'lab') dnClose(); return true; });
 setTimeout(() => { try { if (typeof ACH !== 'undefined') ACH.push({ id: 'dino', ic: '🦖', lt: 'Nėra interneto', en: 'No internet', dlt: `Mokslininkų kompiuteryje surink ${DN_GOAL} taškų dinozauro žaidime`, den: `Get ${DN_GOAL} points in the dinosaur game on the scientists’ computer`, ok: () => DN_BEST >= DN_GOAL }); } catch (_) { } }, 0);
+
+fx.push(() => { if (mode !== 'lab' && LB.big) lbMakeSmall(); return true; });
 </script>
 </html>
