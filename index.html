@@ -19253,11 +19253,12 @@ function lbInter(o) { LB.inter.push(o); return o; }
 const LBC = { white: 0xf6f6f8, chrome: 0xc8ccd4, wood: 0x9a6a3a, dark: 0x3a2a1a };
 function lbAdd(m) { LB.scene.add(m); return m; }
 function lbM(geo, color, sx, sy, sz, x, y, z, o) { return lbAdd(S(geo, mat(color, o), sx, sy, sz, x, y, z)); }
-function lbCol(x0, z0, x1, z1, h) { const b = { x: (x0 + x1) / 2, z: (z0 + z1) / 2, hx: (x1 - x0) / 2, hz: (z1 - z0) / 2, h }; LB.boxes.push(b); return b; }
+function lbCol(x0, z0, x1, z1, h, y0) { const b = { x: (x0 + x1) / 2, z: (z0 + z1) / 2, hx: (x1 - x0) / 2, hz: (z1 - z0) / 2, h }; if (y0 !== undefined) b.y0 = y0; LB.boxes.push(b); return b; }
+function lbLegs(list, r) { for (const [x, z] of list) lbCol(x - r, z - r, x + r, z + r, 14); }
 const LB_BOOKC = [0xc8302a, 0x2a6ac8, 0x3ac85a, 0xffd23a, 0x8a3ac8, 0xff8a3a, 0x2a8a8a, 0xe8e0c8, 0x5a3a2a];
 let lbSeed = 7; const lbRnd = () => { lbSeed = (lbSeed * 16807) % 2147483647; return (lbSeed - 1) / 2147483646; };
 // a pile of books you can stand on (top = h)
-function lbPile(cx, cz, h, w, d) { w = w || 3.2; d = d || 3.2; let y = 0, i = 0; while (y < h - 0.05) { const t = Math.min(0.55 + lbRnd() * 0.35, h - y); const b = lbM(G.box, LB_BOOKC[(i + Math.floor(cx + cz)) % LB_BOOKC.length], w * (0.82 + lbRnd() * 0.14), t, d * (0.8 + lbRnd() * 0.15), cx + (lbRnd() - 0.5) * 0.4, y + t / 2, cz + (lbRnd() - 0.5) * 0.4); b.rotation.y = (lbRnd() - 0.5) * 0.3; lbM(G.box, 0xfaf4e0, w * 0.7, t * 0.8, 0.05, b.position.x, y + t / 2, b.position.z + d * 0.42); y += t; i++; } lbCol(cx - w / 2, cz - d / 2, cx + w / 2, cz + d / 2, h); }
+function lbPile(cx, cz, h, w, d) { w = w || 3.2; d = d || 3.2; let y = 0, i = 0; while (y < h - 0.05) { const t = Math.min(0.55 + lbRnd() * 0.35, h - y); const b = lbM(G.box, LB_BOOKC[(i + Math.floor(cx + cz)) % LB_BOOKC.length], w * (0.82 + lbRnd() * 0.14), t, d * (0.8 + lbRnd() * 0.15), cx + (lbRnd() - 0.5) * 0.4, y + t / 2, cz + (lbRnd() - 0.5) * 0.4); b.rotation.y = (lbRnd() - 0.5) * 0.3; lbM(G.box, 0xfaf4e0, w * 0.7, t * 0.8, 0.05, b.position.x, y + t / 2, b.position.z + d * 0.42); y += t; i++; } lbCol(cx - w * 0.44, cz - d * 0.43, cx + w * 0.44, cz + d * 0.43, h); }
 // stairs of book piles going up to (ex, ez) in direction (dx, dz), the last one reaches topH
 function lbSteps(ex, ez, dx, dz, topH) { const n = Math.ceil(topH / 2.2); for (let i = 0; i < n; i++) lbPile(ex - dx * (n - 1 - i) * 3.2, ez - dz * (n - 1 - i) * 3.2, topH * (i + 1) / n); }
 function lbKnob(x, y, z) { lbM(G.sph, 0xd8b84a, 0.5, 0.5, 0.5, x, y, z, { metalness: 0.7, roughness: 0.3 }); }
@@ -19281,9 +19282,38 @@ function lbJunk(x0, z0, x1, z1, n) { let k = 0;
     else if (r < 0.9) { for (let j = 0; j < 5; j++) lbM(G.sph, 0xd8a050, 0.35, 0.25, 0.35, x + (lbRnd() - 0.5) * 3, 0.15, z + (lbRnd() - 0.5) * 3); }
     else { const b = lbM(G.box, 0xffe14d, 1.4, 0.4, 3.8, x, 0.2, z); b.rotation.y = ry; for (const s of [-1, 1]) { const f = lbM(G.box, 0xffe14d, 0.9, 0.3, 2.6, x + s * 1.2, 0.15, z + 1.4); f.rotation.y = ry + s * 0.6; } }
   } }
+// ---------- cupboards, wardrobes and fridges you can OPEN and WALK INTO ----------
+// face: which way the front looks ('N' = -z, 'S' = +z, 'W' = -x, 'E' = +x)
+function lbCab(name, x0, z0, x1, z1, h, color, face, o) {
+  o = o || {}; const t = 0.7, p = o.plinth || 0.4, inC = o.inside || 0xf2ece0;
+  lbM(G.box, color, x1 - x0, p, z1 - z0, (x0 + x1) / 2, p / 2, (z0 + z1) / 2); lbCol(x0, z0, x1, z1, p);
+  lbM(G.box, inC, x1 - x0 - 2 * t, 0.05, z1 - z0 - 2 * t, (x0 + x1) / 2, p + 0.03, (z0 + z1) / 2);
+  const panel = (ax0, az0, ax1, az1) => { lbM(G.box, color, ax1 - ax0, h - p, az1 - az0, (ax0 + ax1) / 2, p + (h - p) / 2, (az0 + az1) / 2); const b = lbCol(ax0, az0, ax1, az1, h); b.cam = true; };
+  if (face !== 'N') panel(x0, z0, x1, z0 + t); if (face !== 'S') panel(x0, z1 - t, x1, z1); if (face !== 'W') panel(x0, z0, x0 + t, z1); if (face !== 'E') panel(x1 - t, z0, x1, z1);
+  lbM(G.box, color, x1 - x0, t, z1 - z0, (x0 + x1) / 2, h - t / 2, (z0 + z1) / 2); lbCol(x0, z0, x1, z1, h, h - t);
+  // the inside walls get a light colour so you see you are inside
+  for (const sh of o.shelves || []) { const [sx0, sz0, sx1, sz1] = o.shelfRect || [x0 + t, z0 + t, x1 - t, z1 - t]; lbM(G.box, o.shelfColor || inC, sx1 - sx0, 0.5, sz1 - sz0, (sx0 + sx1) / 2, sh - 0.25, (sz0 + sz1) / 2); lbCol(sx0, sz0, sx1, sz1, sh, sh - 0.5); }
+  // the front edge (hinge → other end) and the outward direction
+  const F = { N: [[x1, z0], [x0, z0], [0, -1]], S: [[x0, z1], [x1, z1], [0, 1]], W: [[x0, z0], [x0, z1], [-1, 0]], E: [[x1, z1], [x1, z0], [1, 0]] }[face];
+  const [A, B, n] = F, len = Math.hypot(B[0] - A[0], B[1] - A[1]), ex = (B[0] - A[0]) / len, ez = (B[1] - A[1]) / len, nd = o.doors || 1, dw = len / nd, doors = [];
+  for (let i = 0; i < nd; i++) { const rev = nd === 2 && i === 1, hx = rev ? B[0] : A[0], hz = rev ? B[1] : A[1], dx = rev ? -ex : ex, dz = rev ? -ez : ez;
+    const a0 = Math.atan2(-dz, dx), s = Math.sign(-Math.sin(a0) * n[0] + -Math.cos(a0) * n[1]) || 1, piv = new THREE.Group(); piv.position.set(hx, 0, hz); piv.rotation.y = a0; LB.scene.add(piv);
+    piv.add(S(G.box, mat(o.doorColor || color), dw - 0.1, h - p - 0.1, 0.6, dw / 2, p + (h - p) / 2, 0)); piv.add(S(G.sph, mat(o.handle || 0xd8b84a, { metalness: 0.7, roughness: 0.3 }), 0.6, o.fridge ? 4 : 0.6, 0.6, dw - 1.4, o.knobY || Math.min(h * 0.55, 20), -s * 0.7));
+    if (o.deco) o.deco(piv, dw, i, -s); doors.push({ piv, a0, s }); }
+  const col = { x: (A[0] + B[0]) / 2 + n[0] * 0.3, z: (A[1] + B[1]) / 2 + n[1] * 0.3, hx: n[0] ? 0.6 : len / 2, hz: n[1] ? 0.6 : len / 2, h };
+  const cab = { name, open: false, doors, col, front: [(A[0] + B[0]) / 2 + n[0] * 3, (A[1] + B[1]) / 2 + n[1] * 3], inner: [x0 + t, z0 + t, x1 - t, z1 - t] };
+  LB.cabs[name] = cab; LB.boxes.push(col);
+  cab.set = (open, quiet) => { cab.open = open; const i = LB.boxes.indexOf(col); if (open && i >= 0) LB.boxes.splice(i, 1); if (!open && i < 0) LB.boxes.push(col);
+    for (const d of doors) { const from = d.piv.rotation.y, to = d.a0 + (open ? d.s * 1.45 : 0); if (quiet) d.piv.rotation.y = to; else { let k = 0; fx.push(dt => { k = Math.min(1, k + dt * 2.2); d.piv.rotation.y = from + (to - from) * k; return k < 1; }); } }
+    if (!quiet) tone(open ? 260 : 200, 0.25, { to: open ? 340 : 140, type: 'sine', vol: 0.04 }); };
+  if (!o.noInter) lbInter({ x: cab.front[0], z: cab.front[1], y: o.useY != null ? o.useY : 0, yr: o.useY != null ? 3 : Math.max(3, h - 3), r: Math.max(5, len / 2 + 1), can: () => true, label: () => cab.open ? lbL('<kbd>E</kbd> uždaryti', '<kbd>E</kbd> close') : lbL('<kbd>E</kbd> atidaryti', '<kbd>E</kbd> open'), act: () => cab.set(!cab.open) });
+  if (o.open) cab.set(true, true);
+  if (o.fill) o.fill(cab.inner);
+  return cab;
+}
 // ---------- building the house ----------
 function buildLab() {
-  if (LB.built) return; LB.built = true; const sc = LB.scene; sc.background = new THREE.Color(0x1a1a2a); lbSeed = 7;
+  if (LB.built) return; LB.built = true; LB.cabs = {}; LB.eggs = []; LB.carry = null; const sc = LB.scene; sc.background = new THREE.Color(0x1a1a2a); lbSeed = 7;
   sc.add(new THREE.AmbientLight(0xffffff, 0.5)); sc.add(new THREE.HemisphereLight(0xfff4e0, 0x6a5a4a, 0.5)); { const s = new THREE.DirectionalLight(0xffffff, 0.55); s.position.set(200, 300, 150); sc.add(s); }
   // ===== 1st floor: floors, ceiling, walls =====
   lbFloor(lbR(0, 0, 620, 400), 0x9ad8e8); lbFloor(lbR(620, 0, 1060, 400), 0xc8a070); lbFloor(lbR(1060, 0, 1620, 400), 0xa08060); lbFloor(lbR(0, 400, 890, 770), 0x8aa08a); lbFloor(lbR(890, 400, 1620, 770), 0xe8d8a0);
@@ -19304,12 +19334,12 @@ function buildLab() {
   lbM(G.box, LBC.white, 15, 14, 4, 67.6, 7, 59.6); lbM(G.box, 0xeaeaea, 11, 12, 0.6, 67.6, 13.5, 57.2); lbM(G.box, LBC.chrome, 2, 0.6, 0.6, 72, 13.6, 57.4, { metalness: 0.8 }); lbCol(61, 43.6, 74.2, 56.4, 7.5); lbCol(60, 57.6, 75.2, 61.6, 14);
   lbM(G.cyl, 0xffffff, 2, 3.4, 2, 78, 1.7, 61); lbM(G.cyl, 0xd8c8a0, 0.6, 3.5, 0.6, 78, 1.7, 61);   // a toilet roll
   // sink on a cabinet, mirror; washing machine
-  lbM(G.box, 0xf0f0f4, 19.2, 13, 13, 89.6, 6.5, 35.9); lbM(G.box, 0xdcdce4, 0.3, 11, 12, 80, 6.5, 35.9); lbKnob(79.6, 9, 33); lbKnob(79.6, 9, 39);
+  lbCab('sink', 80, 29.3, 99.2, 42.4, 13, 0xf0f0f4, 'W', { doors: 2, knobY: 9, inside: 0xe8e8ee, fill: ([a, b, c, d]) => { lbM(G.cyl, 0x3ac8ff, 2.2, 6, 2.2, 84, 4, 32.5); lbM(G.cyl, 0xff5ad8, 2, 5, 2, 84, 3.5, 36); lbM(G.box, 0xffd23a, 3, 4, 2, 85, 3, 39.5); lbCol(83, 31.4, 85, 33.6, 7); lbM(G.cyl, 0xb8bcc4, 1, 9, 1, 92, 7.5, 35.9, { metalness: 0.7 }); lbM(G.cyl, 0xb8bcc4, 1, 1, 4, 92, 3.2, 37.5, { metalness: 0.7 }).rotation.x = Math.PI / 2; } });
   lbM(G.box, LBC.white, 19.2, 2, 13, 89.6, 14, 35.9); lbM(G.cyl, 0xbfe8ff, 8, 0.3, 8, 88, 15.05, 35.9); lbM(G.cyl, LBC.chrome, 0.6, 5, 0.6, 96, 17, 35.9, { metalness: 0.8 }); lbM(G.box, LBC.chrome, 4, 0.6, 0.6, 94, 19.2, 35.9, { metalness: 0.8 });
-  lbM(G.box, 0x9ad8ff, 0.3, 14, 11, 98.8, 30, 35.9, { metalness: 0.9, roughness: 0.05 }); lbCol(80, 29.3, 99.2, 42.4, 15);
+  lbM(G.box, 0x9ad8ff, 0.3, 14, 11, 98.8, 30, 35.9, { metalness: 0.9, roughness: 0.05 }); lbCol(80, 29.3, 99.2, 42.4, 15, 13);
   lbM(G.box, LBC.white, 19.2, 17, 12.6, 89.6, 8.5, 48.8); lbM(G.cyl, 0x5a6a8a, 9, 0.5, 9, 80, 8, 48.8).rotation.z = Math.PI / 2; lbM(G.cyl, 0x9ad8ff, 7, 0.6, 7, 79.9, 8, 48.8, { transparent: true, opacity: 0.7 }).rotation.z = Math.PI / 2; lbM(G.box, 0x9a9aa2, 0.4, 2, 10, 80, 15.4, 48.8); lbCol(80, 42.4, 99.2, 55.2, 17);
   // ===== HALL =====
-  lbM(G.box, 0x7a4a2a, 23.4, 40, 19.2, 111.2, 20, 54.4); lbM(G.box, 0x5a3a1a, 0.2, 38, 0.3, 111.2, 20, 44.7); lbKnob(109.5, 20, 44.5); lbKnob(112.9, 20, 44.5); lbCol(99.5, 44.8, 122.9, 64, 40);
+  lbCab('hall', 99.5, 44.8, 122.9, 64, 40, 0x7a4a2a, 'N', { doors: 2, shelves: [31], inside: 0xd8c8b0, fill: () => { lbM(G.cyl, 0xc8c8c8, 0.4, 21, 0.4, 111.2, 29, 55, { metalness: 0.7 }).rotation.z = Math.PI / 2; for (let i = 0; i < 4; i++) lbJacket(LB.scene, 103 + i * 5.2, 27, 55, [0xc83a3a, 0x2a5ac8, 0xd8c83a, 0x3a3a3a][i]).rotation.y = Math.PI / 2; for (let i = 0; i < 3; i++) { lbM(G.box, [0x3a2a1a, 0xffffff, 0xc8302a][i], 3, 2.2, 6, 104 + i * 6, 2.1, 58); lbCol(102.5 + i * 6, 55, 105.5 + i * 6, 61, 3.2); } } });
   for (let i = 0; i < 3; i++) { lbM(G.cyl, [0xc8302a, 0x2a6ac8, 0x3a8a3a][i], 4, 3, 4, 104 + i * 7, 41.5, 54); lbM(G.cyl, [0xc8302a, 0x2a6ac8, 0x3a8a3a][i], 6, 0.5, 6, 104 + i * 7, 40.25, 54); lbM(G.sph, 0xffffff, 1.4, 1.4, 1.4, 104 + i * 7, 43.5, 54); }   // hats
   for (let i = 0; i < 2; i++) { lbM(G.box, 0xd8302a, 3, 0.8, 4, 126 + i * 5, 0.4, 58); lbM(G.box, 0xd8302a, 1, 0.8, 2, 124.6 + i * 5, 0.4, 56); }   // gloves
   for (let i = 0; i < 2; i++) { lbM(G.box, 0x3a2a1a, 4, 2.5, 8, 152 + i * 5, 1.25, 55); lbM(G.box, 0x3a2a1a, 4, 4, 3, 152 + i * 5, 3, 58); lbCol(150 + i * 5, 51, 154 + i * 5, 59.5, 2.5); }   // boots
@@ -19319,10 +19349,10 @@ function buildLab() {
   lbM(G.box, 0x6a4a2a, 14.4, 45, 58.4, 7.2, 22.5, 94); lbCol(0, 64.8, 14.4, 123.2, 45);
   for (let s = 0; s < 5; s++) { lbM(G.box, 0x7a5a3a, 14.6, 0.8, 58, 7.4, 2 + s * 9, 94); for (let k = 0; k < 22; k++) { const h = 5 + lbRnd() * 2.5; lbM(G.box, LB_BOOKC[(k + s) % 9], 2, h, 2.3, 13.6, 2.4 + s * 9 + h / 2, 67 + k * 2.55); } }
   // a little table with a pizza (one slice missing)
-  lbM(G.box, 0x8a6a4a, 16.3, 1, 16, 31, 9.5, 80.8); for (const [x, z] of [[24, 74], [38, 74], [24, 88], [38, 88]]) lbM(G.box, 0x6a4a2a, 1, 9, 1, x, 4.5, z); lbCol(22.9, 72.8, 39.2, 88.8, 10);
+  lbM(G.box, 0x8a6a4a, 16.3, 1, 16, 31, 9.5, 80.8); for (const [x, z] of [[24, 74], [38, 74], [24, 88], [38, 88]]) lbM(G.box, 0x6a4a2a, 1, 9, 1, x, 4.5, z); lbCol(22.9, 72.8, 39.2, 88.8, 10, 9); lbLegs([[24, 74], [38, 74], [24, 88], [38, 88]], 0.6);
   { const p = lbAdd(new THREE.Mesh(new THREE.CylinderGeometry(6.5, 6.5, 0.7, 24, 1, false, 0, Math.PI * 5 / 3), mat(0xffb84a))); p.position.set(31, 10.4, 80.8); lbM(G.cyl, 0xffffff, 15, 0.3, 15, 31, 10.1, 80.8); for (let i = 0; i < 7; i++) { const a = i * 0.8; if (a > 5.2) continue; lbM(G.cyl, 0xc8302a, 1.3, 0.3, 1.3, 31 + Math.sin(a) * 3.8, 10.85, 80.8 + Math.cos(a) * 3.8); } }
   // the research table: potions, books, a coffee mug, papers
-  lbM(G.box, 0x4a4a5a, 52.8, 1.2, 18.9, 67.7, 14.4, 94.5); for (const [x, z] of [[42.5, 86.2], [93, 86.2], [42.5, 103], [93, 103]]) lbM(G.box, 0x3a3a4a, 1.4, 13.8, 1.4, x, 6.9, z); lbCol(41.3, 85.1, 94.1, 104, 15);
+  lbM(G.box, 0x4a4a5a, 52.8, 1.2, 18.9, 67.7, 14.4, 94.5); for (const [x, z] of [[42.5, 86.2], [93, 86.2], [42.5, 103], [93, 103]]) lbM(G.box, 0x3a3a4a, 1.4, 13.8, 1.4, x, 6.9, z); lbCol(41.3, 85.1, 94.1, 104, 15, 13.8); lbLegs([[42.5, 86.2], [93, 86.2], [42.5, 103], [93, 103]], 0.8);
   for (let i = 0; i < 5; i++) { const c = [0x5aff8a, 0xff5ad8, 0x5ad8ff, 0xffd23a, 0xff7a3a][i]; lbM(G.cyl, 0xe8f8ff, 2.2, 4.5, 2.2, 47 + i * 5.5, 17.25, 88.5, { transparent: true, opacity: 0.5 }); lbM(G.cyl, c, 1.9, 2.6, 1.9, 47 + i * 5.5, 16.3, 88.5, { emissive: c, emissiveIntensity: 0.4 }); lbM(G.cyl, 0xe8f8ff, 0.8, 2, 0.8, 47 + i * 5.5, 20.4, 88.5, { transparent: true, opacity: 0.5 }); }
   for (let i = 0; i < 4; i++) lbM(G.box, LB_BOOKC[i + 2], 6, 1.1, 8, 80, 15.6 + i * 1.1, 96).rotation.y = i * 0.2;
   lbM(G.cyl, 0xffffff, 2.4, 3.6, 2.4, 70, 16.8, 99); lbM(G.cyl, 0x4a2a1a, 2.1, 0.2, 2.1, 70, 18.5, 99); lbM(new THREE.TorusGeometry(0.9, 0.25, 6, 12), 0xffffff, 1, 1, 1, 72.6, 17, 99);
@@ -19339,24 +19369,41 @@ function buildLab() {
   // the code panel you have to climb to (a small screen with number buttons)
   LB.panel = lbM(G.box, 0x2a2a3a, 8, 7, 0.6, 128, 12.5, 83.8); lbM(G.box, 0x5affff, 6, 2, 0.2, 128, 14.6, 84.15, { emissive: 0x2a8a8a }); for (let i = 0; i < 9; i++) lbM(G.box, 0xdddddd, 1.2, 0.9, 0.2, 125.8 + (i % 3) * 2.2, 12.4 - Math.floor(i / 3) * 1.3, 84.15);
   // cabinets (one is open: a toolbox and boxes inside)
-  for (const [x0, z0, x1, z1, open] of [[17.6, 105.6, 52.8, 123.2, true], [58.9, 112.8, 89.6, 123.2], [104, 112.8, 131.5, 123.2]]) { lbM(G.box, 0xa07a4a, x1 - x0, 17, z1 - z0, (x0 + x1) / 2, 8.5, (z0 + z1) / 2); lbCol(x0, z0, x1, z1, 17);
-    if (open) { lbM(G.box, 0x3a2a1a, x1 - x0 - 2, 14, 0.3, (x0 + x1) / 2, 8.5, z0 - 0.05); lbM(G.box, 0xc8302a, 8, 4, 5, x0 + 8, 3.5, z0 + 3); lbM(G.box, 0xc8a070, 7, 6, 6, x0 + 22, 4.5, z0 + 3); const d = lbM(G.box, 0xb08a5a, 0.6, 15, (x1 - x0) / 2, x0 - 4, 8.5, z0 - 6); d.rotation.y = 1.0; }
-    else { lbM(G.box, 0x7a5a3a, 0.3, 15, 0.2, (x0 + x1) / 2, 8.5, z0 - 0.1); lbKnob((x0 + x1) / 2 - 1.5, 13, z0 - 0.4); lbKnob((x0 + x1) / 2 + 1.5, 13, z0 - 0.4); } }
+  lbCab('res1', 17.6, 105.6, 52.8, 123.2, 17, 0xa07a4a, 'N', { doors: 2, shelves: [9], shelfColor: 0x8a6a3a, inside: 0xd8c0a0, open: true, fill: () => { lbM(G.box, 0xc8302a, 8, 4, 5, 26, 3, 114); lbM(G.box, 0x9a9aa2, 6, 0.6, 1, 26, 5.3, 114, { metalness: 0.7 }); lbCol(22, 111.5, 30, 116.5, 5); lbM(G.box, 0xc8a070, 7, 6, 6, 40, 4, 116); lbCol(36.5, 113, 43.5, 119, 7); for (let i = 0; i < 6; i++) lbM(G.box, LB_BOOKC[i], 1.6, 5, 3.6, 22 + i * 1.8, 11.5, 118); } });
+  lbCab('res2', 58.9, 112.8, 89.6, 123.2, 17, 0xa07a4a, 'N', { doors: 2, shelves: [9], shelfColor: 0x8a6a3a, inside: 0xd8c0a0, fill: () => { for (let i = 0; i < 5; i++) { const c = [0x5aff8a, 0xff5ad8, 0x5ad8ff, 0xffd23a, 0xff7a3a][i]; lbM(G.cyl, c, 2, 4, 2, 63 + i * 5, 11, 118, { transparent: true, opacity: 0.75 }); } lbM(G.box, 0xfaf8ee, 6, 0.3, 8, 80, 1.2, 117); } });
+  lbCab('res3', 104, 112.8, 131.5, 123.2, 17, 0xa07a4a, 'N', { doors: 2, shelves: [9], shelfColor: 0x8a6a3a, inside: 0xd8c0a0, fill: () => { for (let i = 0; i < 4; i++) lbM(G.box, LB_BOOKC[i + 3], 6, 1, 8, 110, 1.5 + i, 118).rotation.y = i * 0.3; lbCol(106.5, 114, 113.5, 122, 5); lbM(G.box, 0x3a3a4a, 9, 5, 6, 124, 11.5, 118); lbM(G.box, 0x5aff8a, 6, 2.6, 0.1, 124, 12, 114.9, { emissive: 0x0a6a2a }); } });
   // ===== KITCHEN =====
   // a table with 2 chairs and a fruit bowl
-  lbM(G.box, 0xc8904a, 33, 1.2, 14.4, 185.6, 14.4, 89.9); for (const [x, z] of [[170, 83.7], [201, 83.7], [170, 96.1], [201, 96.1]]) lbM(G.box, 0xa8703a, 1.2, 13.8, 1.2, x, 6.9, z); lbCol(169, 82.7, 202.1, 97.1, 15);
+  lbM(G.box, 0xc8904a, 33, 1.2, 14.4, 185.6, 14.4, 89.9); for (const [x, z] of [[170, 83.7], [201, 83.7], [170, 96.1], [201, 96.1]]) lbM(G.box, 0xa8703a, 1.2, 13.8, 1.2, x, 6.9, z); lbCol(169, 82.7, 202.1, 97.1, 15, 13.8); lbLegs([[170, 83.7], [201, 83.7], [170, 96.1], [201, 96.1]], 0.7);
   lbM(G.cyl, 0xffffff, 7, 2, 7, 185, 16, 90); for (let i = 0; i < 5; i++) lbM(G.sph, [0xff3a3a, 0xffd23a, 0x5ac84a, 0xff8a1a, 0xff3a3a][i], 1.6, 1.6, 1.6, 183 + (i % 3) * 2, 17.6 + (i > 2 ? 1.2 : 0), 89 + (i % 2) * 2);
-  for (const [cz, s] of [[78, -1], [102, 1]]) { lbM(G.box, 0xa8703a, 10, 1, 9, 185, 9, cz); for (const [dx, dz] of [[-4.4, -4], [4.4, -4], [-4.4, 4], [4.4, 4]]) lbM(G.box, 0x8a5a2a, 0.9, 9, 0.9, 185 + dx, 4.5, cz + dz); lbM(G.box, 0xa8703a, 10, 12, 1, 185, 15, cz + s * 4.2); lbCol(180, cz - 4.5, 190, cz + 4.5, 9.5); }
+  for (const [cz, s] of [[78, -1], [102, 1]]) { lbM(G.box, 0xa8703a, 10, 1, 9, 185, 9, cz); for (const [dx, dz] of [[-4.4, -4], [4.4, -4], [-4.4, 4], [4.4, 4]]) lbM(G.box, 0x8a5a2a, 0.9, 9, 0.9, 185 + dx, 4.5, cz + dz); lbM(G.box, 0xa8703a, 10, 12, 1, 185, 15, cz + s * 4.2); lbCol(180, cz - 4.5, 190, cz + 4.5, 9.5, 8.5); lbLegs([[180.6, cz - 4], [189.4, cz - 4], [180.6, cz + 4], [189.4, cz + 4]], 0.5); }
   // fridge (door with handle and magnets, it opens)
-  lbM(G.box, LBC.white, 20.8, 36, 17.7, 225.9, 18, 74.85); lbCol(215.5, 66, 236.3, 83.7, 36);
-  { const piv = new THREE.Group(); piv.position.set(215.5, 0, 83.7); sc.add(piv); piv.add(S(G.box, mat(0xeeeef4), 20.8, 35, 0.8, 10.4, 17.8, 0.4)); piv.add(S(G.box, mat(0xd8d8e0), 20.8, 0.4, 0.9, 10.4, 24, 0.45)); piv.add(S(G.box, mat(0x9a9aa2, { metalness: 0.7 }), 0.9, 9, 0.9, 19.3, 19, 1.2)); for (let i = 0; i < 4; i++) piv.add(S(G.box, mat([0xff3a3a, 0x3a8aff, 0xffd23a, 0x5ac84a][i]), 2.2, 2.2, 0.4, 3 + i * 4, 28 + (i % 2) * 2.5, 0.95)); piv.add(S(G.box, mat(0xffffff), 4, 5, 0.2, 9, 22, 0.9)); LB.fridgeDoor = piv; }
+  lbCab('fridge', 215.5, 66, 236.3, 83.7, 36, LBC.white, 'S', { fridge: true, noInter: true, plinth: 1.5, inside: 0xeef6ff, handle: 0x9a9aa2, knobY: 19, shelves: [9.5, 17, 24.5, 31], shelfRect: [216.2, 66.7, 235.6, 77], shelfColor: 0xcfeaff,
+    deco: (piv, dw, i, out) => { piv.add(S(G.box, mat(0xd8d8e0), dw - 0.2, 0.4, 0.7, dw / 2, 24, out * 0.1)); for (let k = 0; k < 4; k++) piv.add(S(G.box, mat([0xff3a3a, 0x3a8aff, 0xffd23a, 0x5ac84a][k]), 2.2, 2.2, 0.4, 3 + k * 4, 28 + (k % 2) * 2.5, out * 0.45)); piv.add(S(G.box, mat(0xffffff), 4, 5, 0.2, 9, 20, out * 0.4));
+      for (const y of [8, 16, 26]) { piv.add(S(G.box, mat(0xdfe8f0), dw - 3, 0.4, 2.4, dw / 2, y, -out * 1.5)); piv.add(S(G.box, mat(0xdfe8f0), dw - 3, 2, 0.3, dw / 2, y + 1, -out * 2.6)); }
+      piv.add(S(G.cyl, mat(0x3a8a3a), 1.4, 5, 1.4, 4, 18.5, -out * 1.5)); piv.add(S(G.cyl, mat(0xff8a1a), 1.4, 4.5, 1.4, 7, 18.2, -out * 1.5)); piv.add(S(G.box, mat(0xffffff), 2.2, 4, 1.6, 12, 10, -out * 1.5)); },
+    fill: () => {
+      lbM(G.box, 0xfffbe8, 18, 0.4, 2, 225.9, 35, 70, { emissive: 0xfff8d0 });   // the light
+      // a stack to climb: butter → a jam jar → a milk carton → the lowest shelf
+      lbM(G.box, 0xffe88a, 3.5, 2.5, 3.5, 219.7, 2.75, 80.7); lbM(G.box, 0xffd23a, 3.6, 0.4, 3.6, 219.7, 4.1, 80.7); lbCol(217.9, 78.9, 221.5, 82.5, 4);
+      lbM(G.cyl, 0xc82a4a, 3.4, 5.1, 3.4, 223.6, 4.05, 80.7, { transparent: true, opacity: 0.85 }); lbM(G.cyl, 0xffffff, 3.6, 0.6, 3.6, 223.6, 6.3, 80.7); lbCol(222, 79, 225.2, 82.4, 6.6);
+      lbM(G.box, 0xffffff, 3.6, 7.5, 3.6, 227.3, 5.25, 80.7); lbM(G.box, 0x3a8aff, 3.65, 2.5, 3.65, 227.3, 5, 80.7); lbM(G.cone, 0xffffff, 3.6, 1.6, 3.6, 227.3, 9.8, 80.7).rotation.y = Math.PI / 4; lbCol(225.5, 78.9, 229.1, 82.5, 9);
+      lbM(G.box, 0x7ac84a, 5, 3, 6, 232.5, 3, 72); lbM(G.sph, 0xff3a3a, 2.4, 2.4, 2.4, 232.5, 5.2, 72); lbCol(230, 69, 235, 75, 4.5);   // salad + a tomato
+      // the egg tray (lowest shelf)
+      lbM(G.box, 0xc8b89a, 7, 0.4, 4.6, 229.4, 9.7, 71);
+      for (let i = 0; i < 6; i++) { if (LAB.egg && i === 0) continue; const m = lbM(G.sph, 0xfff4e0, 1.0, 1.25, 1.0, 227.3 + (i % 3) * 2.1, 10.5, 70 + Math.floor(i / 3) * 2.1); LB.eggs.push({ m, vel: new V3(), vr: 0, fly: false, top: 0 }); }
+      lbM(G.box, 0xffe14d, 6, 3, 5, 220, 11, 71); lbM(G.cyl, 0xc8302a, 2.4, 6, 2.4, 223.5, 12.5, 69);   // cheese, ketchup
+      for (let i = 0; i < 3; i++) lbM(G.cyl, [0x3ac85a, 0xc83a3a, 0x3a8aff][i], 2.4, 6, 2.4, 220 + i * 3.5, 20, 70);   // bottles
+      lbM(G.cyl, 0xff9ab8, 8, 4, 8, 228, 26.5, 71); lbM(G.cyl, 0xffffff, 8.4, 0.6, 8.4, 228, 28.6, 71); lbM(G.sph, 0xc8302a, 1, 1, 1, 228, 29.3, 71);   // a cake
+      for (let i = 0; i < 4; i++) lbM(G.box, [0xffffff, 0x8ac8ff, 0xffd23a, 0xff8a3a][i], 3, 3.5, 3, 219 + i * 4, 33, 70);   // yoghurts
+    } });
   // oven (window, knobs) and stove top (burners)
   lbM(G.box, 0x5a5a6a, 22.1, 17, 18.3, 247.35, 8.5, 75.2); lbM(G.box, 0x2a1a1a, 14, 8, 0.3, 247.35, 8, 84.4, { emissive: 0x3a1a00 }); for (let i = 0; i < 4; i++) lbKnob(240 + i * 5, 15, 84.6); lbCol(236.3, 66, 258.4, 84.3, 17);
   lbM(G.box, 0xd8d8e0, 21.1, 17, 34.1, 247.85, 8.5, 102.15); lbM(G.box, 0x1a1a1a, 19, 0.3, 32, 247.85, 17.1, 102.15); for (const [x, z, r] of [[248, 96, 3.3], [244, 108, 2.4], [252, 108, 2.4]]) { lbM(G.cyl, 0x3a3a3a, r * 2, 0.4, r * 2, x, 17.3, z); lbM(G.cyl, 0x8a2a1a, r * 1.2, 0.45, r * 1.2, x, 17.35, z, { emissive: 0x3a0a00 }); } lbCol(237.3, 85.1, 258.4, 119.2, 17);
   lbM(G.cyl, 0x9a9aa2, 7, 5, 7, 248, 20, 96, { metalness: 0.7 }); lbM(G.cyl, 0x1a1a1a, 0.8, 0.8, 7, 248, 22.5, 100.5).rotation.x = Math.PI / 2;   // a pot
   // tall cupboard, plate cabinet with plates
-  lbM(G.box, 0x8a5a2b, 18.8, 40, 14.1, 152.6, 20, 112.65); lbM(G.box, 0x6a3a1a, 0.2, 38, 0.3, 152.6, 20, 105.5); lbKnob(151, 20, 105.3); lbKnob(154.2, 20, 105.3); lbCol(143.2, 105.6, 162, 119.7, 40);
-  lbM(G.box, 0xb07a4a, 22.6, 17, 13.3, 198.3, 8.5, 113.05); lbKnob(194, 13, 106.2); lbKnob(202, 13, 106.2); lbCol(187, 106.4, 209.6, 119.7, 17); for (let i = 0; i < 6; i++) lbM(G.cyl, 0xffffff, 6, 0.4, 6, 198, 17.3 + i * 0.5, 113);
+  lbCab('cupb', 143.2, 105.6, 162, 119.7, 40, 0x8a5a2b, 'N', { shelves: [10, 20, 30], shelfColor: 0x7a4a1a, inside: 0xd8c0a0, fill: () => { lbM(G.box, 0xffd23a, 5, 7, 3, 148, 5, 114); lbM(G.box, 0xc8302a, 4, 6, 3, 155, 4.5, 115); lbCol(145.5, 112.5, 150.5, 115.5, 8.5); for (let i = 0; i < 4; i++) lbM(G.cyl, [0xc8c8d0, 0xff8a3a, 0x3ac85a, 0xc8302a][i], 2.6, 4, 2.6, 147 + i * 3.5, 12, 113, { metalness: 0.5 }); for (let i = 0; i < 3; i++) lbM(G.box, [0xffffff, 0xe8d8b0, 0x8a5a2a][i], 4, 6, 2.5, 148 + i * 5, 23, 114); lbM(G.cyl, 0xffffff, 6, 3, 6, 152, 31.5, 113); } });
+  lbCab('plates', 187, 106.4, 209.6, 119.7, 17, 0xb07a4a, 'N', { doors: 2, shelves: [8.5], shelfColor: 0x9a6a3a, inside: 0xe8d8c0, fill: () => { for (let i = 0; i < 8; i++) lbM(G.cyl, 0xffffff, 6, 0.4, 6, 193, 1.3 + i * 0.45, 113); lbCol(190, 110, 196, 116, 4.8); for (let i = 0; i < 4; i++) lbM(G.cyl, [0x8ac8ff, 0xffffff, 0xffd23a, 0xff8ab8][i], 2.4, 3.4, 2.4, 192 + i * 4, 10.2, 113); } }); for (let i = 0; i < 6; i++) lbM(G.cyl, 0xffffff, 6, 0.4, 6, 198, 17.3 + i * 0.5, 113);
   // ===== the doors of the 1st floor =====
   lbDoor('kitchen', 890, 497, 604, false, !LAB.kitchenOpen, 0x6a3a1a); if (LAB.kitchenOpen) { LB.doors.kitchen.open = true; LB.doors.kitchen.piv.rotation.y = -1.4; }
   lbDoor('stairs', 1060, 70, 290, false, !LAB.stairsOpen, 0x5a3a2a); if (LAB.stairsOpen) { LB.doors.stairs.open = true; LB.doors.stairs.piv.rotation.y = -1.4; }
@@ -19369,7 +19416,7 @@ function buildLab() {
   lbWallH(0, 0, 1900, [], true); lbWallH(807, 0, 1900, [], true); lbWallV(0, 0, 807, [], true); lbWallV(1900, 0, 807, [], true);
   lbWallV(740, 0, 570, [[58, 190]], true); lbWallH(570, 740, 1320, [], true); lbWallV(1320, 345, 570, [], true); lbWallH(345, 1320, 1900, [], true);
   for (let i = 0; i < 6; i++) { lbM(G.box, 0xa07a4a, 6.5, 24 - i * 4, 35, LF2 + 3.25 + i * 6.5, (24 - i * 4) / 2, 17.5); lbCol(LF2 + i * 6.5, 0, LF2 + 6.5 + i * 6.5, 35, 24 - i * 4); } lbM(G.cyl, 0x6a4a2a, 0.8, 20, 0.8, LF2 + 40, 10, 36);
-  lbM(G.box, 0x7a4a2a, 18.7, 40, 60, LF2 + 109, 20, 61.2); lbM(G.box, 0x5a3a1a, 0.3, 38, 0.2, LF2 + 99.6, 20, 61.2); lbKnob(LF2 + 99.3, 20, 59); lbKnob(LF2 + 99.3, 20, 63.4); lbCol(LF2 + 99.7, 31.2, LF2 + 118.4, 91.2, 40);
+  lbCab('ward2', LF2 + 99.7, 31.2, LF2 + 118.4, 91.2, 40, 0x7a4a2a, 'W', { doors: 2, shelves: [32], inside: 0xd8c8b0, fill: () => { lbM(G.cyl, 0xc8c8c8, 0.4, 56, 0.4, LF2 + 109, 30, 61.2, { metalness: 0.7 }).rotation.x = Math.PI / 2; for (let i = 0; i < 6; i++) lbJacket(LB.scene, LF2 + 109, 28, 37 + i * 9, [0x8a3ac8, 0xffffff, 0x2a8a8a, 0xc8302a, 0xffd23a, 0x3a3a3a][i]); for (let i = 0; i < 3; i++) { lbM(G.box, 0xc8a070, 9, 6, 8, LF2 + 110, 4, 40 + i * 20); lbCol(LF2 + 105.5, 36 + i * 20, LF2 + 114.5, 44 + i * 20, 7); } } });
   // the living-room door: locked; under it a board – saw it away and crawl under the door
   lbDoor('living', 740, 58, 190, true, false, 0x6a3a1a, 2.6);
   { const x = 740 * LP + LF2; LB.board = lbBox([x - 1, 58 * LP, x + 1, 190 * LP], 0, 2.6, 0xc8a050, !LAB.boardCut); if (LAB.boardCut) LB.board.m.visible = false; for (let i = 0; i < 3; i++) lbM(G.cyl, 0x9a9aa2, 0.3, 0.6, 0.3, x - 1.2, 1.3, 12 + i * 8, { metalness: 0.7 }).rotation.z = Math.PI / 2; }
@@ -19382,35 +19429,34 @@ function buildLab() {
   lbM(G.box, 0x5a7ac8, 79.2, 9, 12.8, LF2 + 166, 4.5, 81.6); lbCol(LF2 + 126.4, 75.2, LF2 + 205.6, 88, 9); lbM(G.box, 0x4a6ab8, 79.2, 11, 6.4, LF2 + 166, 14.5, 86.4); for (const sx of [126.4, 205.6]) { lbM(G.box, 0x4a6ab8, 4, 14, 14, LF2 + sx + (sx < 150 ? 2 : -2), 7, 81.6); }
   for (let i = 0; i < 3; i++) lbM(G.box, 0x6a8ad8, 24, 3, 11, LF2 + 140 + i * 26, 10.5, 80.8);
   for (let i = 0; i < 4; i++) { const f = makeFolkFig({ head: 1, eyes: 1, nose: 1, mouth: 1, arms: 1, legs: 1, chest: 1, color: ['#f0c8a0', '#d8a070', '#f4d8c0', '#a8704a'][i] }, null, false); lbCoat(f); f.scale.setScalar(12); f.position.set(LF2 + (850 + i * 120) * LP, 0, 505 * LP); f.rotation.y = Math.PI; sc.add(f); LB.sci.push(f); }
-  lbM(G.box, 0xc89a5a, 44, 17, 24, LF2 + 233.5, 8.5, 42.9); lbCol(LF2 + 211.5, 30.9, LF2 + 255.5, 54.9, 17); for (let i = 0; i < 3; i++) { lbM(G.box, 0xa87a3a, 40, 0.3, 0.3, LF2 + 233.5, 4 + i * 5, 30.8); lbKnob(LF2 + 233.5, 6 + i * 5, 30.6); }
+  lbCab('snack', LF2 + 211.5, 30.9, LF2 + 255.5, 54.9, 17, 0xc89a5a, 'N', { doors: 2, shelves: [8.5], shelfColor: 0xa87a3a, inside: 0xe8d0b0, fill: () => { for (let i = 0; i < 6; i++) lbM(G.box, [0xff3a8a, 0x3ac8ff, 0xffd23a, 0x8a3ac8, 0xff3a3a, 0x3ac85a][i], 3, 4, 1, LF2 + 216 + i * 6, 11, 46); for (let i = 0; i < 3; i++) { lbM(G.box, [0xff3a3a, 0x3a8aff, 0xffd23a][i], 5, 5, 4, LF2 + 220 + i * 12, 3.5, 45); lbCol(LF2 + 217.5 + i * 12, 43, LF2 + 222.5 + i * 12, 47, 6); } } });
   for (let i = 0; i < 4; i++) lbM(G.box, [0xff3a8a, 0x3ac8ff, 0xffd23a, 0x8a3ac8][i], 2.5, 1.2, 4, LF2 + 245 + (i % 2) * 3, 17.6 + Math.floor(i / 2) * 1.2, 48);   // candy
-  lbM(G.box, LBC.white, 18.2, 17, 18.4, LF2 + 294.9, 8.5, 9.2); lbM(G.box, 0x9a9aa2, 0.6, 6, 0.6, LF2 + 287, 10, 18.6, { metalness: 0.7 }); lbCol(LF2 + 285.8, 0, LF2 + 304, 18.4, 17);
+  lbCab('minifr', LF2 + 285.8, 0, LF2 + 304, 18.4, 17, LBC.white, 'S', { fridge: true, handle: 0x9a9aa2, knobY: 10, shelves: [8.5], shelfColor: 0xcfeaff, inside: 0xeef6ff, fill: () => { for (let i = 0; i < 4; i++) lbM(G.cyl, [0xc8202a, 0x3ac85a, 0x2a6ac8, 0xffd23a][i], 1.8, 5, 1.8, LF2 + 289 + i * 3.6, 11.5, 6, { metalness: 0.6, roughness: 0.3 }); lbM(G.box, 0xffffff, 4, 5, 4, LF2 + 299, 3.5, 6); lbCol(LF2 + 297, 4, LF2 + 301, 8, 6); } });
   // bedroom: bed (headboard, blanket, pillows), desk with a computer, keyboard, mouse, lamp, a chair, slippers
   lbM(G.box, 0x8a5aa8, 41.7, 8, 58.4, LF2 + 238.85, 4, 89.5); lbM(G.box, 0xffffff, 41, 2, 57, LF2 + 238.85, 9, 89.5); lbM(G.box, 0xb88ad8, 42, 1, 42, LF2 + 238.85, 10.3, 97.7); lbM(G.box, 0x6a3a8a, 41.7, 20, 2, LF2 + 238.85, 10, 61.3); lbCol(LF2 + 218, 60.3, LF2 + 259.7, 118.7, 10);
   for (const x of [229, 248]) lbM(G.box, 0xffffff, 15, 3, 9, LF2 + x, 11.5, 67);
-  lbM(G.box, 0x6a4a2a, 20.8, 1.2, 45.9, LF2 + 285.6, 14.4, 95.75); for (const [x, z] of [[276, 74], [295, 74], [276, 117.5], [295, 117.5]]) lbM(G.box, 0x4a3a2a, 1.2, 13.8, 1.2, LF2 + x, 6.9, z); lbCol(LF2 + 275.2, 72.8, LF2 + 296, 118.7, 15);
+  lbM(G.box, 0x6a4a2a, 20.8, 1.2, 45.9, LF2 + 285.6, 14.4, 95.75); for (const [x, z] of [[276, 74], [295, 74], [276, 117.5], [295, 117.5]]) lbM(G.box, 0x4a3a2a, 1.2, 13.8, 1.2, LF2 + x, 6.9, z); lbCol(LF2 + 275.2, 72.8, LF2 + 296, 118.7, 15, 13.8); lbLegs([[LF2 + 276, 74], [LF2 + 295, 74], [LF2 + 276, 117.5], [LF2 + 295, 117.5]], 0.7);
   lbM(G.box, 0x1a1a1a, 1.4, 12, 18, LF2 + 293, 22, 92); lbM(G.box, 0x3a8aff, 0.2, 10.5, 16.4, LF2 + 292.2, 22, 92, { emissive: 0x0a3a8a }); lbM(G.box, 0x1a1a1a, 2, 2, 2, LF2 + 293, 16, 92);
   lbM(G.box, 0x2a2a2a, 4, 0.5, 13, LF2 + 285, 15.25, 92); lbM(G.sph, 0x2a2a2a, 1.1, 0.5, 1.6, LF2 + 285, 15.3, 102); lbM(G.cyl, 0x2a2a2a, 1, 9, 1, LF2 + 292, 19.5, 112); lbM(G.cone, 0xffd23a, 3.5, 3, 3.5, LF2 + 292, 25, 112, { emissive: 0x6a5a00 });
-  lbM(G.box, 0x3a3a4a, 10, 1, 10, LF2 + 266, 9, 95); lbM(G.box, 0x3a3a4a, 1, 12, 10, LF2 + 261, 15, 95); lbM(G.cyl, 0x2a2a2a, 1, 9, 1, LF2 + 266, 4.5, 95); lbCol(LF2 + 261, 90, LF2 + 271, 100, 9.5);
+  lbM(G.box, 0x3a3a4a, 10, 1, 10, LF2 + 266, 9, 95); lbM(G.box, 0x3a3a4a, 1, 12, 10, LF2 + 261, 15, 95); lbM(G.cyl, 0x2a2a2a, 1, 9, 1, LF2 + 266, 4.5, 95); lbCol(LF2 + 261, 90, LF2 + 271, 100, 9.5, 8.5); lbLegs([[LF2 + 266, 95]], 0.6);
   for (let i = 0; i < 2; i++) lbM(G.box, 0xff8ab8, 4, 1.5, 8, LF2 + 225 + i * 5, 0.75, 123);
   // ===== the book stairs (you jump higher now that you are tiny!) and the junk on the floors =====
   lbSteps(20.4, 37.6, -1, 0, 11);              // up onto the bathtub
   lbSteps(31, 90.4, 0, -1, 10); lbPile(40.2, 83, 12.5, 2, 6);   // onto the pizza table → the research table
   lbSteps(131, 86, 1, 0, 11.5);                // up to the machine's code panel
-  lbSteps(235.6, 86.8, 1, 0, 17);              // up onto the stove → the oven → the fridge handle
+  lbSteps(235.6, 112, 1, 0, 17);               // up onto the stove → the oven → the fridge handle
   lbSteps(LF2 + 216.4, 100, 1, 0, 10); lbPile(LF2 + 267.5, 82, 12.5, 14, 6);   // onto the bed → a book bridge → the desk
   lbSteps(LF2 + 209.9, 36, 1, 0, 17);          // onto the snack cabinet (in the living room!)
   // ---------- the items ----------
   const beacon = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color: 0xffe14d, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.8 })); beacon.scale.setScalar(4); sc.add(beacon); LB.beacon = beacon;
   LB.items.kkey = lbKey(0x9adfff); LB.items.kkey.position.set(6, 11, 16); sc.add(LB.items.kkey); LB.items.kkey.visible = !LAB.kitchenKey;
-  LB.items.egg = S(G.sph, mat(0xfff8e8), 0.8, 1.0, 0.8, 226, 1, 93); sc.add(LB.items.egg); LB.items.egg.visible = LAB.fridge && !LAB.egg;
-  if (LAB.fridge) LB.fridgeDoor.rotation.y = 1.4;
-  LB.items.skey = lbKey(0xffd23a); LB.items.skey.position.set(226, 0, 95.5); sc.add(LB.items.skey); LB.items.skey.visible = LAB.egg && !LAB.stairsKey;
-  LB.items.yolk = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.1, 16), mat(0xffc81a)); LB.items.yolk.position.set(226, 0.05, 93); sc.add(LB.items.yolk); LB.items.yolk.visible = LAB.egg;
+  if (LAB.fridge) LB.cabs.fridge.set(true, true);
+  { const ep = LAB.eggPos || [226, 0, 93]; LB.items.skey = lbKey(0xffd23a); LB.items.skey.position.set(ep[0] + 1.3, ep[1], ep[2]); sc.add(LB.items.skey); LB.items.skey.visible = LAB.egg && !LAB.stairsKey;
+    LB.items.yolk = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.1, 16), mat(0xffc81a)); LB.items.yolk.position.set(ep[0], ep[1] + 0.06, ep[2]); sc.add(LB.items.yolk); LB.items.yolk.visible = LAB.egg; }
   { const s = new THREE.Group(), m = mat(0xc8c8d0, { metalness: 0.7, roughness: 0.3 }); s.add(S(G.box, m, 0.1, 0.5, 1.6, 0, 0.3, 0.8)); s.add(S(G.box, mat(0xc8302a), 0.3, 0.5, 0.6, 0, 0.3, -0.2)); for (let i = 0; i < 6; i++) s.add(S(G.cone, m, 0.1, 0.18, 0.1, 0, 0.02, 0.2 + i * 0.25)); s.position.set(LF2 + 280, 15, 108); LB.scene.add(s); LB.items.saw = s; s.visible = !LAB.saw; }
   { const b = new THREE.Group(); b.add(S(G.box, mat(0xff3a3a), 2.4, 3.2, 0.7, 0, 1.6, 0)); b.add(S(G.box, mat(0xffd23a), 2.0, 0.9, 0.72, 0, 2.0, 0)); b.rotation.y = 0.4; b.position.set(LF2 + 228, 17, 42); LB.scene.add(b); LB.items.chips = b; }
   // golden coins on top of things (+500 € each)
-  LB.coins = []; for (const [x, y, z] of [[12, 11, 45], [70, 15, 95], [250, 17, 110], [LF2 + 240, 10, 100], [LF2 + 290, 15, 80], [LF2 + 248, 17, 38]]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.2, 16), mat(0xffd23a, { metalness: 0.8, roughness: 0.25, emissive: 0x5a4000 })); c.rotation.x = Math.PI / 2; c.position.set(x, y + 1, z); sc.add(c); const id = LB.coins.length; c.visible = !(LAB.coins || []).includes(id); LB.coins.push(c); }
+  LB.coins = []; for (const [x, y, z] of [[12, 11, 45], [70, 15, 95], [250, 17, 110], [LF2 + 240, 10, 100], [LF2 + 290, 15, 80], [LF2 + 248, 17, 38], [74, 1, 118], [LF2 + 109, 1, 75], [LF2 + 295, 1, 12]]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.2, 16), mat(0xffd23a, { metalness: 0.8, roughness: 0.25, emissive: 0x5a4000 })); c.rotation.x = Math.PI / 2; c.position.set(x, y + 1, z); sc.add(c); const id = LB.coins.length; c.visible = !(LAB.coins || []).includes(id); LB.coins.push(c); }
   // ---------- the dangers ----------
   const vac = () => { const g = new THREE.Group(); g.add(S(G.cyl, mat(0x2a2a3a), 9, 2, 9, 0, 1, 0)); g.add(S(G.cyl, mat(0x5a5a6a, { metalness: 0.6 }), 7, 0.4, 7, 0, 2.1, 0)); g.add(S(G.sph, mat(0xff3a3a, { emissive: 0xaa0000 }), 0.8, 0.8, 0.8, 0, 2.4, 3)); for (const s of [-1, 1]) { const b = S(G.cyl, mat(0x8a8a8a), 1.2, 0.3, 1.2, s * 3.8, 0.3, 3.4); g.add(b); } sc.add(g); return g; };
   LB.vacs = [{ g: vac(), path: [[130, 8], [162, 8], [162, 40], [130, 40]], i: 0, sp: 9 }, { g: vac(), path: [[152, 72], [209, 72], [209, 104], [152, 104]], i: 0, sp: 11 }];
@@ -19420,16 +19466,15 @@ function buildLab() {
     g.position.set(LF2 + 470, 0, 100); sc.add(g); LB.cat = { g, x: LF2 + 470, z: 100, hd: 0, t: 0, chase: 0 }; }
   LB.traps = []; for (const [x, z] of [[40, 30], [205, 92.5], [LF2 + 205, 112], [19, 98], [150, 12]]) { const g = new THREE.Group(); g.add(S(G.box, mat(0xc8a060), 5, 0.6, 3, 0, 0.3, 0)); const bar = new THREE.Group(); bar.position.set(-2.2, 0.65, 0); g.add(bar); bar.add(S(G.box, mat(0xb0b0b8, { metalness: 0.7 }), 4.2, 0.15, 2.6, 2.1, 0, 0)); g.add(S(G.box, mat(0xffd23a), 1.2, 0.4, 0.9, 1, 0.75, 0)); g.position.set(x, 0, z); g.rotation.y = lbRnd() * 3; sc.add(g); LB.traps.push({ g, bar, x, z, snap: 0 }); }
   // ---------- what you can do (E) – some things are high up: climb the book stairs! ----------
-  lbInter({ x: 6, z: 16, y: 11, r: 4.5, can: () => !LAB.kitchenKey, label: () => lbL('<kbd>E</kbd> paimti raktą 🔑', '<kbd>E</kbd> take the key 🔑'), act: () => { LAB.kitchenKey = true; saveLab(); LB.items.kkey.visible = false; lbGot(lbL('🔑 Raktas nuo virtuvės durų!', '🔑 The kitchen door key!'), lbL('Virtuvės durys – tyrimų kambaryje', 'The kitchen door is in the research room')); } });
-  lbInter({ x: 138, z: 88, r: 6, can: () => !LAB.kitchenOpen, label: () => LAB.kitchenKey ? lbL('<kbd>E</kbd> atrakinti virtuvės duris', '<kbd>E</kbd> unlock the kitchen door') : lbL('🔒 Užrakinta. Reikia rakto…', '🔒 Locked. You need a key…'), act: () => { if (!LAB.kitchenKey) { lbNo(); return; } LAB.kitchenOpen = true; saveLab(); lbOpenDoor('kitchen'); toast(lbL('Virtuvė atrakinta!', 'Kitchen unlocked!'), lbL('Šaldytuvo rankena aukštai – užlipk knygų laiptais ant viryklės', 'The fridge handle is high – climb the book stairs onto the stove'), '#ffd23a'); } });
-  lbInter({ x: 238.5, z: 81, y: 17, r: 5, can: () => !LAB.fridge, label: () => lbL('<kbd>E</kbd> patraukti šaldytuvo rankeną', '<kbd>E</kbd> pull the fridge handle'), act: () => { LAB.fridge = true; saveLab(); let a = 0; fx.push(dt => { a = Math.min(1, a + dt * 1.2); LB.fridgeDoor.rotation.y = a * 1.4; return a < 1; }); tone(300, 0.4, { to: 500, type: 'sine', vol: 0.05 }); setTimeout(() => { LB.items.egg.visible = true; noiseHit(0.15, { f: 2000, vol: 0.06 }); toast(lbL('Iš šaldytuvo iškrito kiaušinis! 🥚', 'An egg fell out of the fridge! 🥚'), lbL('Nulipk ir sudaužyk jį (E)', 'Climb down and break it (E)'), '#fff8e8'); }, 700); } });
-  lbInter({ x: 226, z: 93, r: 4, can: () => LAB.fridge && !LAB.egg, label: () => lbL('<kbd>E</kbd> sudaužyti kiaušinį 🥚', '<kbd>E</kbd> break the egg 🥚'), act: () => { LAB.egg = true; saveLab(); LB.items.egg.visible = false; LB.items.yolk.visible = true; LB.items.skey.visible = true; noiseHit(0.3, { f: 1500, fto: 400, vol: 0.15 }); toast(lbL('Krekšt! Kiaušinyje – raktas!', 'Crack! A key inside the egg!'), '', '#ffd23a'); } });
-  lbInter({ x: 226, z: 95.5, r: 4, can: () => LAB.egg && !LAB.stairsKey, label: () => lbL('<kbd>E</kbd> paimti raktą 🔑', '<kbd>E</kbd> take the key 🔑'), act: () => { LAB.stairsKey = true; saveLab(); LB.items.skey.visible = false; lbGot(lbL('🔑 Raktas nuo durų į laiptus!', '🔑 The key to the stairs door!'), lbL('Durys su striukėmis – prieškambaryje. Saugokis dulkių siurblio!', 'The door with the jackets is in the hall. Watch out for the vacuum!')); } });
-  lbInter({ x: 164, z: 29, r: 7, can: () => !LAB.stairsOpen, label: () => LAB.stairsKey ? lbL('<kbd>E</kbd> atrakinti duris į laiptus', '<kbd>E</kbd> unlock the stairs door') : lbL('🔒 Užrakinta. Reikia rakto…', '🔒 Locked. You need a key…'), act: () => { if (!LAB.stairsKey) { lbNo(); return; } LAB.stairsOpen = true; saveLab(); lbOpenDoor('stairs'); toast(lbL('Laiptai atviri!', 'The stairs are open!'), lbL('Eik pro duris – užlipsi į antrą aukštą', 'Go through the door – you climb to the 2nd floor'), '#ffd23a'); } });
+  lbInter({ x: 6, z: 16, y: 11, r: 4.5, can: () => !LAB.kitchenKey, label: () => lbL('<kbd>E</kbd> paimti raktą 🔑', '<kbd>E</kbd> take the key 🔑'), act: () => { LAB.kitchenKey = true; saveLab(); LB.items.kkey.visible = false; lbGot(lbL('🔑 Raktas!', '🔑 A key!'), ''); } });
+  lbInter({ x: 138, z: 88, r: 6, can: () => !LAB.kitchenOpen, label: () => LAB.kitchenKey ? lbL('<kbd>E</kbd> atrakinti virtuvės duris', '<kbd>E</kbd> unlock the kitchen door') : lbL('🔒 Užrakinta. Reikia rakto…', '🔒 Locked. You need a key…'), act: () => { if (!LAB.kitchenKey) { lbNo(); return; } LAB.kitchenOpen = true; saveLab(); lbOpenDoor('kitchen'); toast(lbL('Atrakinta!', 'Unlocked!'), '', '#ffd23a'); } });
+  lbInter({ x: 238.5, z: 81, y: 17, r: 5, can: () => !LAB.fridge, label: () => lbL('<kbd>E</kbd> patraukti šaldytuvo rankeną', '<kbd>E</kbd> pull the fridge handle'), act: () => { LAB.fridge = true; saveLab(); LB.cabs.fridge.set(true); tone(300, 0.4, { to: 500, type: 'sine', vol: 0.05 }); } });
+  { const ep = LAB.eggPos || [226, 0, 93]; LB.keyInter = lbInter({ x: ep[0] + 1.3, z: ep[2], y: ep[1], r: 4, can: () => LAB.egg && !LAB.stairsKey, label: () => lbL('<kbd>E</kbd> paimti raktą 🔑', '<kbd>E</kbd> take the key 🔑'), act: () => { LAB.stairsKey = true; saveLab(); LB.items.skey.visible = false; lbGot(lbL('🔑 Raktas!', '🔑 A key!'), ''); } }); }
+  lbInter({ x: 164, z: 29, r: 7, can: () => !LAB.stairsOpen, label: () => LAB.stairsKey ? lbL('<kbd>E</kbd> atrakinti duris į laiptus', '<kbd>E</kbd> unlock the stairs door') : lbL('🔒 Užrakinta. Reikia rakto…', '🔒 Locked. You need a key…'), act: () => { if (!LAB.stairsKey) { lbNo(); return; } LAB.stairsOpen = true; saveLab(); lbOpenDoor('stairs'); toast(lbL('Atrakinta!', 'Unlocked!'), '', '#ffd23a'); } });
   lbInter({ x: LF2 + 44, z: 18, r: 7, can: () => true, label: () => lbL('<kbd>E</kbd> lipti žemyn ⬇', '<kbd>E</kbd> go downstairs ⬇'), act: () => lbStairs(1) });
-  lbInter({ x: LF2 + 280, z: 108, y: 15, r: 4.5, can: () => !LAB.saw, label: () => lbL('<kbd>E</kbd> paimti mini pjūklą 🪚', '<kbd>E</kbd> take the mini saw 🪚'), act: () => { LAB.saw = true; saveLab(); LB.items.saw.visible = false; lbGot(lbL('🪚 Mini pjūklas!', '🪚 A mini saw!'), lbL('Svetainės durų apačia užkalta lenta – išpjauk ją. Saugokis katino!', 'The bottom of the living-room door has a board – saw it. Watch out for the cat!')); } });
+  lbInter({ x: LF2 + 280, z: 108, y: 15, r: 4.5, can: () => !LAB.saw, label: () => lbL('<kbd>E</kbd> paimti mini pjūklą 🪚', '<kbd>E</kbd> take the mini saw 🪚'), act: () => { LAB.saw = true; saveLab(); LB.items.saw.visible = false; lbGot(lbL('🪚 Mini pjūklas!', '🪚 A mini saw!'), ''); } });
   lbInter({ x: LF2 + 740 * LP - 3, z: 124 * LP, r: 7, can: () => !LAB.boardCut, label: () => LAB.saw ? lbL('<kbd>E</kbd> išpjauti lentą 🪚', '<kbd>E</kbd> saw the board 🪚') : lbL('Po durimis užkalta lenta. Reikia pjūklo…', 'A board under the door. You need a saw…'), act: () => { if (!LAB.saw) { lbNo(); return; } lbSaw(); } });
-  lbInter({ x: LF2 + 228, z: 42, y: 17, r: 5, can: () => !LAB.gotCode, label: () => lbL('<kbd>E</kbd> apžiūrėti traškučių pakelį', '<kbd>E</kbd> look at the chips bag'), act: () => { if (!LAB.code) LAB.code = String(1000 + Math.floor(Math.random() * 9000)); LAB.gotCode = true; saveLab(); startTalk(lbL('Traškučių pakelis', 'Chips bag'), [lbL(`Ant pakelio kažkas užrašė: „MAŽINIMO MAŠINOS KODAS: ${LAB.code}“`, `Someone wrote on the bag: “SHRINKING MACHINE CODE: ${LAB.code}”`), lbL(`Įsimink: ${LAB.code}. Grįžk į tyrimų kambarį (1 aukštas), užlipk prie mašinos pulto ir įvesk kodą!`, `Remember: ${LAB.code}. Go back to the research room (1st floor), climb up to the machine panel and type the code!`)], '#ffd23a'); } });
+  lbInter({ x: LF2 + 228, z: 42, y: 17, r: 5, can: () => !LAB.gotCode, label: () => lbL('<kbd>E</kbd> apžiūrėti traškučių pakelį', '<kbd>E</kbd> look at the chips bag'), act: () => { if (!LAB.code) LAB.code = String(1000 + Math.floor(Math.random() * 9000)); LAB.gotCode = true; saveLab(); startTalk(lbL('Traškučių pakelis', 'Chips bag'), [lbL(`Ant pakelio kažkas užrašė: „MAŽINIMO MAŠINOS KODAS: ${LAB.code}“`, `Someone wrote on the bag: “SHRINKING MACHINE CODE: ${LAB.code}”`)], '#ffd23a'); } });
   lbInter({ x: 129, z: 86, y: 11.5, yr: 3.5, r: 6, can: () => true, label: () => lbL('<kbd>E</kbd> mažinimo mašinos pultas – įvesti kodą', '<kbd>E</kbd> shrinking machine panel – type a code'), act: () => lbCodeOpen() });
   lbJunk(20, 2, 98, 62, 18); lbJunk(100, 2, 168, 44, 12); lbJunk(16, 66, 140, 122, 22); lbJunk(144, 66, 236, 122, 18); lbJunk(LF2 + 40, 36, LF2 + 98, 128, 16); lbJunk(LF2 + 120, 2, LF2 + 300, 90, 14); lbJunk(LF2 + 120, 92, LF2 + 300, 128, 14);
   linearize(sc);
@@ -19438,8 +19483,8 @@ function lbCoat(f) { const c = mat(0xf8f8ff); f.add(S(G.box, c, 0.64, 0.95, 0.4,
 function lbGot(a, b) { [784, 988, 1175].forEach((f, i) => tone(f, 0.18, { type: 'triangle', vol: 0.05, when: i * 0.08 })); toast(a, b, '#ffd23a'); }
 function lbNo() { tone(200, 0.2, { to: 140, type: 'square', vol: 0.04, lp: 900 }); }
 function lbSaw() { if (LB.sawing) return; LB.sawing = true; let t = 0; fx.push(dt => { t += dt; if (Math.random() < dt * 14) noiseHit(0.05, { f: 3000, fto: 1500, vol: 0.05 }); if (t >= 1.6) { LB.sawing = false; LAB.boardCut = true; saveLab(); LB.board.m.visible = false; const i = LB.boxes.indexOf(LB.board.b); if (i >= 0) LB.boxes.splice(i, 1);
-      toast(lbL('Lenta išpjauta!', 'The board is cut!'), lbL('Lįsk po durimis. Svetainėje mokslininkai žiūri TV – kai REKLAMA, NEJUDĖK!', 'Crawl under the door. In the living room the scientists watch TV – during an ADVERT, DON’T MOVE!'), '#ffd23a'); return false; } return true; }); }
-function lbStairs(toFloor) { transitioning = true; fadeTo(() => { transitioning = false; if (toFloor === 2) { player.pos.set(LF2 + 50, 0, 45); player.fwd.set(1, 0, 0); } else { player.pos.set(158, 0, 30); player.fwd.set(-1, 0, 0); } player.vel.set(0, 0, 0); player.vr = 0; toast(toFloor === 2 ? lbL('Antras aukštas', '2nd floor') : lbL('Pirmas aukštas', '1st floor'), lbL('Ilgai lipai – laiptai tau milžiniški!', 'That took a while – the stairs are giant for you!'), '#ffd23a'); }); }
+      toast(lbL('Lenta išpjauta!', 'The board is cut!'), '', '#ffd23a'); return false; } return true; }); }
+function lbStairs(toFloor) { transitioning = true; fadeTo(() => { transitioning = false; if (toFloor === 2) { player.pos.set(LF2 + 50, 0, 45); player.fwd.set(1, 0, 0); } else { player.pos.set(158, 0, 30); player.fwd.set(-1, 0, 0); } player.vel.set(0, 0, 0); player.vr = 0; toast(toFloor === 2 ? lbL('Antras aukštas', '2nd floor') : lbL('Pirmas aukštas', '1st floor'), '', '#ffd23a'); }); }
 // ---------- the code ----------
 function lbCodeOpen() {
   if (LB.codeOpen) return; LB.codeOpen = true; card = { kind: 'labcode' }; for (const k in keys) keys[k] = false; try { document.exitPointerLock && document.exitPointerLock(); } catch (_) { }
@@ -19447,7 +19492,7 @@ function lbCodeOpen() {
     document.body.appendChild(d); LB.codeEl = d; const inp = d.querySelector('[data-c]');
     inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') lbCodeTry(); if (e.key === 'Escape') lbCodeClose(); }); d.addEventListener('mousedown', e => e.stopPropagation());
     d.querySelector('[data-ok]').onclick = lbCodeTry; d.querySelector('[data-x]').onclick = lbCodeClose; }
-  LB.codeEl.hidden = false; const inp = LB.codeEl.querySelector('[data-c]'); inp.value = ''; LB.codeEl.querySelector('[data-m]').textContent = LAB.gotCode ? '' : lbL('Kodo dar nežinai… Gal jis kur nors antrame aukšte?', 'You don’t know the code yet… Maybe it is somewhere upstairs?'); setTimeout(() => inp.focus(), 50);
+  LB.codeEl.hidden = false; const inp = LB.codeEl.querySelector('[data-c]'); inp.value = ''; LB.codeEl.querySelector('[data-m]').textContent = LAB.gotCode ? '' : ''; setTimeout(() => inp.focus(), 50);
 }
 function lbCodeClose() { LB.codeOpen = false; if (LB.codeEl) LB.codeEl.hidden = true; card = null; if (!lockFailed) try { requestLock(); } catch (_) { } }
 function lbCodeTry() {
@@ -19488,7 +19533,7 @@ function enterLab(intro) {
   player.pos.set(108, 0, 96); player.fwd.set(0, 0, 1); LB.hearts = 5; player.vel.set(0, 0, 0); player.vr = 0; player.pitch = 0.12; camera.up.set(0, 1, 0); camera.position.set(112, 6, 104); musicSet(3);
   $('bName').textContent = lbL('Mokslininkų namai', 'The scientists’ house'); $('bEn').textContent = lbL('Tu mažytis kaip voras', 'You are tiny like a spider'); $('bAtm').textContent = lbL('Pabėk ir vėl tapk didelis!', 'Escape and become big again!'); document.documentElement.style.setProperty('--biome', '#5affff');
   if (intro) setTimeout(() => { startTalk(lbL('Mokslininkai', 'The scientists'), [lbL('Štai mūsų namai. Eime į tyrimų kambarį…', 'Here is our house. Let’s go to the research room…'), lbL('Atsistok į šitą mašiną. Nebijok, nieko neskaudės…', 'Stand in this machine. Don’t be afraid, it won’t hurt…'), lbL('BZZZZZT! ⚡⚡⚡', 'BZZZZZT! ⚡⚡⚡'), lbL('Ha ha ha! Dabar tu MAŽESNIS UŽ PELĘ – kaip mažas voras!', 'Ha ha ha! Now you are SMALLER THAN A MOUSE – like a little spider!'), lbL('O mašina iš tavęs PAVOGĖ DIEVO GALIAS. Jos dabar mūsų!', 'And the machine STOLE YOUR GOD POWERS. They are ours now!'), lbL('Mes tave APGAVOME! Jokių 50 000 €. Ha ha ha!', 'We TRICKED you! No 50 000 €. Ha ha ha!')], '#ff5a5a', () => {
-      bigBanner(lbL('JIE TAVE APGAVO! 😠', 'THEY TRICKED YOU! 😠'), lbL('Pabėk ir vėl tapk didelis. Pirmiausia – rask raktą nuo virtuvės durų', 'Escape and become big again. First find the kitchen door key')); }); }, 700);
+      bigBanner(lbL('JIE TAVE APGAVO! 😠', 'THEY TRICKED YOU! 😠'), lbL('Pabėk!', 'Escape!')); }); }, 700);
   setTimeout(() => { redFlash('rgba(150,255,255,.6)', 500); }, 600);
 }
 function lbHide() { if (LB.hud) LB.hud.hidden = true; }
@@ -19540,7 +19585,7 @@ function lbGoal() {
 function lbTv(dt) {
   LB.tvLeft -= dt; const was = LB.tvState;
   if (LB.tvLeft <= 0) { if (LB.tvState === 'ad') { LB.tvState = 'show'; LB.tvLeft = 6 + Math.random() * 4; } else { LB.tvState = 'ad'; LB.tvLeft = 4; LB.adGrace = 0.6; } }
-  if (was !== LB.tvState && lbInLiving()) { if (LB.tvState === 'ad') { toast(lbL('📺 REKLAMA! NEJUDĖK!', '📺 ADVERT! DON’T MOVE!'), lbL('Mokslininkai dairosi aplink…', 'The scientists look around…'), '#ff5a5a'); tone(880, 0.15, { type: 'square', vol: 0.05 }); tone(660, 0.15, { type: 'square', vol: 0.05, when: 0.18 }); } else toast(lbL('📺 Filmas tęsiasi – gali judėti', '📺 The film goes on – you can move'), '', '#9aff7a'); }
+  if (was !== LB.tvState && lbInLiving()) { if (LB.tvState === 'ad') { toast(lbL('📺 REKLAMA', '📺 ADVERT'), '', '#ff5a5a'); tone(880, 0.15, { type: 'square', vol: 0.05 }); tone(660, 0.15, { type: 'square', vol: 0.05, when: 0.18 }); }  }
   LB.tvDraw -= dt; if (LB.tvDraw > 0 && was === LB.tvState) return; LB.tvDraw = 0.15;
   const x = LB.tvX, t = T;
   if (LB.tvState === 'ad') { x.fillStyle = Math.sin(t * 8) > 0 ? '#c8202a' : '#e83a2a'; x.fillRect(0, 0, 256, 144); x.fillStyle = '#ffe14d'; x.font = 'bold 44px sans-serif'; x.textAlign = 'center'; x.fillText(lbL('REKLAMA', 'ADVERT'), 128, 70); x.font = 'bold 22px sans-serif'; x.fillStyle = '#fff'; x.fillText(lbL('PIRK TRAŠKUČIUS!', 'BUY CHIPS!'), 128, 110); }
@@ -19552,23 +19597,43 @@ function updateLab(dt, t) {
   const fl2 = player.pos.x > 350;
   // you are tiny – you jump much higher (but you can't fly here!)
   if (keys.Space && player.grounded && !player.down && !card) { player.vr = 11; player.grounded = false; try { sfx.jump(); } catch (_) { } }
-  walkFlat(dt, fl2 ? { boxes: LB.boxes, x0: LF2, x1: LF2 + 1900 * LP, z0: 0, z1: 807 * LP, H: LH, camDist: 9, speed: 2.2 } : { boxes: LB.boxes, x0: 0, x1: 1620 * LP, z0: 0, z1: 770 * LP, H: LH, camDist: 9, speed: 2.2 });
+  const pyTop = player.pos.y + 1.9, bx_ = LB.boxes.filter(b => b.y0 === undefined || pyTop > b.y0);
+  walkFlat(dt, fl2 ? { boxes: bx_, x0: LF2, x1: LF2 + 1900 * LP, z0: 0, z1: 807 * LP, H: LH, camDist: 9, speed: 2.2 } : { boxes: bx_, x0: 0, x1: 1620 * LP, z0: 0, z1: 770 * LP, H: LH, camDist: 9, speed: 2.2 });
   // the camera only bumps into walls (not into every chair and book pile), so you always see yourself and the room
   { const dist = 9, pitch = player.pitch, head = player.pos.clone().add(new V3(0, 1.4, 0)); let want = player.pos.clone().addScaledVector(UP, 1.6 + Math.sin(pitch) * dist).addScaledVector(player.fwd, -Math.cos(pitch) * dist * (frontView ? -1 : 1));
-    for (let k = 1; k <= 10; k++) { const q = head.clone().lerp(want, k / 10); if (LB.boxes.some(b => b.h === undefined && Math.abs(q.x - b.x) < b.hx + 0.4 && Math.abs(q.z - b.z) < b.hz + 0.4)) { want = head.clone().lerp(want, Math.max(0, (k - 1.5) / 10)); break; } }
+    for (let k = 1; k <= 10; k++) { const q = head.clone().lerp(want, k / 10); if (LB.boxes.some(b => (b.h === undefined || (b.cam && q.y < b.h + 0.3)) && Math.abs(q.x - b.x) < b.hx + 0.4 && Math.abs(q.z - b.z) < b.hz + 0.4)) { want = head.clone().lerp(want, Math.max(0, (k - 1.5) / 10)); break; } }
     want.y = Math.min(want.y, LH - 0.6); if (!LB.cam || LB.cam.distanceTo(want) > 40) LB.cam = want.clone(); else LB.cam.lerp(want, Math.min(1, dt * 10)); camera.position.copy(LB.cam); camera.lookAt(head); }
   if (!fl2 && LAB.stairsOpen && player.pos.x > 173 && player.pos.z < 62 && !transitioning) lbStairs(2);
-  lbTv(dt); lbDangers(dt, t);
+  lbTv(dt); lbDangers(dt, t); lbEggs(dt);
   const ad = LB.tvState === 'ad'; LB.adGrace -= dt;
   LB.sci.forEach((f, i) => { const h = f.userData.head; if (h) h.rotation.y = ad ? Math.sin(t * 1.5 + i * 1.3) * 1.1 : Math.sin(t * 0.4 + i) * 0.1; });
   if (ad && LB.adGrace <= 0 && lbInLiving() && Math.hypot(player.vel.x, player.vel.z) > 1.2 && !card && !transitioning && LB.hurtT <= 0) {
     lbHurt(lbL('😱 Mokslininkas tave pamatė! Išmetė atgal už durų', '😱 A scientist saw you! He threw you back out'), [LF2 + 740 * LP - 8, 124 * LP]); }
   if (LB.ring) LB.ring.rotation.z += dt; if (LB.tube) LB.tube.material.opacity = 0.3 + Math.sin(t * 3) * 0.08;
-  const [bx, bz, by] = lbTarget(); LB.beacon.position.set(bx, (by || 0) + 3 + Math.sin(t * 3) * 0.6, bz); LB.beacon.visible = !card;
+  const [bx, bz, by] = lbTarget(); LB.beacon.position.set(bx, (by || 0) + 3 + Math.sin(t * 3) * 0.6, bz); LB.beacon.visible = false;
   if (LB.items.kkey.visible) LB.items.kkey.rotation.y += dt * 2; if (LB.items.skey.visible) LB.items.skey.rotation.y += dt * 2;
   { const n = !card && lbNear(); setPrompt(n ? n.label() : ''); }
   if (!LB.hud) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:6;background:rgba(10,20,40,.82);border:1px solid rgba(90,255,255,.6);border-radius:14px;padding:6px 14px;font:700 14px system-ui;color:#fff;pointer-events:none;text-align:center;max-width:min(600px,90vw)'; document.body.appendChild(d); LB.hud = d; }
-  LB.hud.hidden = false; const s = `❤️ <b>${LB.hearts}/5</b> · 🪙 ${(LAB.coins || []).length}/${LB.coins.length} · 🔬 ${lbGoal()}${lbInLiving() ? ` <span style="color:${ad ? '#ff5a5a' : '#9aff7a'}">· 📺 ${ad ? lbL('REKLAMA – NEJUDĖK!', 'ADVERT – DON’T MOVE!') : lbL('filmas – gali judėti', 'film – you can move')}</span>` : ''}`; if (LB.hud.dataset.s !== s) { LB.hud.dataset.s = s; LB.hud.innerHTML = s; }
+  LB.hud.hidden = false; const s = `❤️ <b>${LB.hearts}/5</b> · 🪙 ${(LAB.coins || []).length}/${LB.coins.length} ${LAB.gotCode ? ` · 🔢 ${LAB.code}` : ''}${lbInLiving() ? ` <span style="color:${ad ? '#ff5a5a' : '#9aff7a'}">· 📺 ${ad ? lbL('REKLAMA', 'ADVERT') : lbL('filmas', 'film')}</span>` : ''}`; if (LB.hud.dataset.s !== s) { LB.hud.dataset.s = s; LB.hud.innerHTML = s; }
+}
+// ---------- eggs: hold BOTH mouse buttons next to one to pick it up, carry it, let go and it falls. From high up it breaks ----------
+function lbSupport(x, z, y) { let g = 0; for (const b of LB.boxes) if (b.h !== undefined && b.h <= y + 0.05 && b.h > g && Math.abs(x - b.x) < b.hx && Math.abs(z - b.z) < b.hz) g = b.h; return g; }
+function lbEggs(dt) {
+  if (!LB.eggs) return; const both = hands.L.hold && hands.R.hold && !card && !transitioning;
+  if (LB.carry && !both) { const e = LB.carry; LB.carry = null; e.fly = true; e.vel.copy(player.vel).multiplyScalar(0.8).addScaledVector(player.fwd, 1.5); e.vel.y = 0; e.vr = 1.5; e.top = e.m.position.y; try { sfx.whoosh(0.08); } catch (_) { } }
+  if (!LB.carry && both) { let best = null, bd = 2.6; for (const e of LB.eggs) { if (e.fly || e.gone) continue; const q = e.m.position, dy = q.y - player.pos.y; if (dy < -0.8 || dy > 2.6) continue; const d = Math.hypot(q.x - player.pos.x, q.z - player.pos.z); if (d < bd) { bd = d; best = e; } } if (best) { LB.carry = best; try { sfx.grab(); } catch (_) { tone(600, 0.06, { type: 'sine', vol: 0.04 }); } } }
+  if (LB.carry) { const m = LB.carry.m; m.position.copy(player.pos).addScaledVector(UP, 1.15).addScaledVector(player.fwd, 0.85); m.rotation.set(0, 0, 0); }
+  for (const e of LB.eggs) { if (!e.fly || e.gone) continue; const q = e.m.position, ox = q.x, oz = q.z, bot = q.y - 0.6;
+    q.x += e.vel.x * dt; q.z += e.vel.z * dt;
+    if (LB.boxes.some(b => (b.h === undefined || b.h > bot + 0.05) && (b.y0 === undefined || q.y + 0.6 > b.y0) && Math.abs(q.x - b.x) < b.hx && Math.abs(q.z - b.z) < b.hz)) { q.x = ox; q.z = oz; e.vel.set(0, 0, 0); }
+    e.vr -= GRAV * dt; q.y += e.vr * dt; e.top = Math.max(e.top, q.y); e.m.rotation.x += dt * 5;
+    const g = lbSupport(q.x, q.z, bot); if (q.y - 0.6 <= g) { if (e.top - 0.6 - g >= 2.4) lbEggBreak(e, q.x, g, q.z); else { q.y = g + 0.6; e.fly = false; e.m.rotation.set(0, 0, 0); tone(900, 0.05, { type: 'sine', vol: 0.03 }); } } }
+}
+function lbEggBreak(e, x, y, z) {
+  e.gone = true; e.fly = false; e.m.visible = false; noiseHit(0.3, { f: 1500, fto: 400, vol: 0.15 }); shake = Math.max(shake || 0, 0.1);
+  for (let i = 0; i < 6; i++) { const s = e.m.clone(); s.visible = true; s.scale.set(0.5, 0.25, 0.4); s.position.set(x + (Math.random() - 0.5) * 2.6, y + 0.12, z + (Math.random() - 0.5) * 2.6); s.rotation.set(Math.random() * 3, Math.random() * 3, 0); LB.scene.add(s); }
+  if (!LAB.egg) { LAB.egg = true; LAB.eggPos = [x, y, z]; saveLab(); LB.items.yolk.position.set(x, y + 0.06, z); LB.items.yolk.visible = true; LB.items.skey.position.set(x + 1.3, y, z); LB.items.skey.visible = !LAB.stairsKey; Object.assign(LB.keyInter, { x: x + 1.3, z, y }); toast(lbL('Krekšt! 🥚', 'Crack! 🥚'), '', '#fff8e8'); }
+  else { const yk = LB.items.yolk.clone(); yk.position.set(x, y + 0.06, z); yk.visible = true; LB.scene.add(yk); toast(lbL('Krekšt! 🥚', 'Crack! 🥚'), '', '#fff8e8'); }
 }
 function lbNear() { let b = null, bd = 1e9; for (const o of LB.inter) { if (!o.can()) continue; if (Math.abs(player.pos.y - (o.y || 0)) > (o.yr || 2.5)) continue; const d = Math.hypot(player.pos.x - o.x, player.pos.z - o.z); if (d < o.r && d < bd) { bd = d; b = o; } } return b; }
 // no flying in the scientists' house (no god flight, no jetpack)
@@ -19584,7 +19649,7 @@ addEventListener('keydown', e => {
 }, true);
 { const _d = doTeleport; doTeleport = (...a) => { if (mode === 'lab') return; return _d(...a); }; }
 // after a reload you are still tiny in the house
-{ const _st = startGame; startGame = (...a) => { const r = _st(...a); if (LAB.stage === 'lab') setTimeout(() => { try { hideCard(); enterLab(false); toast(lbL('Tu vis dar mažytis!', 'You are still tiny!'), lbGoal(), '#5affff'); } catch (e) { console.error(e); } }, 900); return r; }; }
+{ const _st = startGame; startGame = (...a) => { const r = _st(...a); if (LAB.stage === 'lab') setTimeout(() => { try { hideCard(); enterLab(false); toast(lbL('Tu vis dar mažytis!', 'You are still tiny!'), '', '#5affff'); } catch (e) { console.error(e); } }, 900); return r; }; }
 // achievement
 setTimeout(() => { try { if (typeof ACH !== 'undefined') ACH.push({ id: 'lab', ic: '🔬', lt: 'Ne toks jau mažas', en: 'Not so small after all', dlt: 'Pabėk iš mokslininkų namų ir atgauk dievo galias', den: 'Escape from the scientists’ house and get your god powers back', ok: () => LAB.stage === 'done' }); } catch (_) { } }, 0);
 // test helper (bandymams)
@@ -19592,9 +19657,9 @@ window.labTest = n => { LAB = Object.assign(LAB, { stage: 'lab', kitchenKey: n >
 // E in the house never falls through to the planet's things (kiosks…)
 { const _o = onInspect; onInspect = (...a) => { if (mode === 'lab') { if (card && card.kind === 'talk') advanceTalk(); else if (card && card.kind !== 'labcode') hideCard(); return; } return _o(...a); }; }
 // start the scientists' house again from the very beginning (used by a gift)
-function lbReset() { if (!LB.built) return; for (let i = LB.scene.children.length - 1; i >= 0; i--) LB.scene.remove(LB.scene.children[i]); Object.assign(LB, { built: false, boxes: [], inter: [], doors: {}, sci: [], items: {}, coins: [], vacs: [], traps: [], cat: null, cam: null, board: null, tvState: 'show', tvLeft: 7 }); }
+function lbReset() { if (!LB.built) return; for (let i = LB.scene.children.length - 1; i >= 0; i--) LB.scene.remove(LB.scene.children[i]); Object.assign(LB, { built: false, cabs: {}, eggs: [], carry: null, keyInter: null, boxes: [], inter: [], doors: {}, sci: [], items: {}, coins: [], vacs: [], traps: [], cat: null, cam: null, board: null, tvState: 'show', tvLeft: 7 }); }
 function labRestart() {
-  LAB = Object.assign(LAB, { stage: 'lab', kitchenKey: false, kitchenOpen: false, fridge: false, egg: false, stairsKey: false, stairsOpen: false, saw: false, boardCut: false, gotCode: false, coins: [], code: String(1000 + Math.floor(Math.random() * 9000)) }); saveLab();
+  LAB = Object.assign(LAB, { stage: 'lab', kitchenKey: false, kitchenOpen: false, fridge: false, egg: false, stairsKey: false, stairsOpen: false, saw: false, boardCut: false, gotCode: false, eggPos: null, coins: [], code: String(1000 + Math.floor(Math.random() * 9000)) }); saveLab();
   try { while (talk) advanceTalk(); } catch (_) { } hideCard(); lbReset(); transitioning = true; fadeTo(() => { transitioning = false; enterLab(true); });
 }
 </script>
