@@ -19656,12 +19656,85 @@ setTimeout(() => { try { if (typeof ACH !== 'undefined') ACH.push({ id: 'lab', i
 // test helper (bandymams)
 window.labTest = n => { LAB = Object.assign(LAB, { stage: 'lab', kitchenKey: n >= 1, kitchenOpen: n >= 2, fridge: n >= 3, egg: n >= 3, stairsKey: n >= 3, stairsOpen: n >= 4, saw: n >= 5, boardCut: n >= 6, gotCode: n >= 7, code: LAB.code || '1234' }); saveLab(); hideCard(); enterLab(n === 0); };
 // E in the house never falls through to the planet's things (kiosks…)
-{ const _o = onInspect; onInspect = (...a) => { if (mode === 'lab') { if (card && card.kind === 'talk') advanceTalk(); else if (card && card.kind !== 'labcode') hideCard(); return; } return _o(...a); }; }
+{ const _o = onInspect; onInspect = (...a) => { if (mode === 'lab') { if (card && card.kind === 'talk') advanceTalk(); else if (card && card.kind !== 'labcode' && card.kind !== 'dino') hideCard(); return; } return _o(...a); }; }
 // start the scientists' house again from the very beginning (used by a gift)
 function lbReset() { if (!LB.built) return; for (let i = LB.scene.children.length - 1; i >= 0; i--) LB.scene.remove(LB.scene.children[i]); Object.assign(LB, { built: false, cabs: {}, eggs: [], carry: null, keyInter: null, boxes: [], inter: [], doors: {}, sci: [], items: {}, coins: [], vacs: [], traps: [], cat: null, cam: null, board: null, tvState: 'show', tvLeft: 7 }); }
 function labRestart() {
   LAB = Object.assign(LAB, { stage: 'lab', kitchenKey: false, kitchenOpen: false, fridge: false, egg: false, stairsKey: false, stairsOpen: false, saw: false, boardCut: false, gotCode: false, eggPos: null, coins: [], code: String(1000 + Math.floor(Math.random() * 9000)) }); saveLab();
   try { while (talk) advanceTalk(); } catch (_) { } hideCard(); lbReset(); transitioning = true; fadeTo(() => { transitioning = false; enterLab(true); });
 }
+// ================= the scientists' computer: "no internet" – the dinosaur jumps over cacti 🦖 =================
+// Upstairs on the desk (climb over the bed). E turns it on. Space / ↑ / click = jump, ↓ = duck, Esc = turn off.
+const DN = { open: false, el: null, cv: null, x: null, st: 'wait', t: 0, y: 0, vy: 0, duck: false, obs: [], sp: 380, next: 1, dist: 0, raf: 0, last: 0 };
+let DN_BEST = 0; try { DN_BEST = +localStorage.getItem('modly-dino') || 0; } catch (_) { }
+const DN_GOAL = 500, DN_G = 160;
+function lbDinoBuild() {
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 160; const x = cv.getContext('2d');
+  x.fillStyle = '#f4f4f4'; x.fillRect(0, 0, 256, 160); x.fillStyle = '#535353'; x.font = 'bold 18px sans-serif'; x.textAlign = 'center'; x.fillText(lbL('Nėra interneto', 'No internet'), 128, 120);
+  x.fillRect(110, 40, 30, 22); x.fillRect(100, 58, 30, 26); x.fillRect(104, 84, 6, 10); x.fillRect(120, 84, 6, 10); x.fillRect(92, 66, 10, 8); x.fillStyle = '#f4f4f4'; x.fillRect(128, 46, 4, 4); x.fillStyle = '#535353'; x.fillRect(80, 98, 96, 2);
+  const tex = new THREE.CanvasTexture(cv), m = new THREE.Mesh(new THREE.PlaneGeometry(16.2, 10.3), new THREE.MeshBasicMaterial({ map: tex })); m.position.set(LF2 + 292.05, 22, 92); m.rotation.y = -Math.PI / 2; LB.scene.add(m);
+  lbInter({ x: LF2 + 288.5, z: 92, y: 15, yr: 3, r: 5, can: () => true, label: () => lbL('<kbd>E</kbd> įjungti kompiuterį 💻', '<kbd>E</kbd> turn on the computer 💻'), act: () => dnOpen() });
+}
+{ const _b = buildLab; buildLab = (...a) => { const was = LB.built; const r = _b(...a); if (!was && LB.built) try { lbDinoBuild(); } catch (e) { console.error(e); } return r; }; }
+function dnOpen() {
+  if (DN.open) return; DN.open = true; card = { kind: 'dino' }; for (const k in keys) keys[k] = false; hands.L.hold = hands.R.hold = false;
+  if (!DN.el) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;inset:0;z-index:26;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)';
+    d.innerHTML = `<div style="background:#2a2a2a;border-radius:16px;padding:14px 14px 10px;box-shadow:0 10px 40px rgba(0,0,0,.6)"><canvas width="640" height="200" style="display:block;width:min(640px,88vw);background:#f7f7f7;border-radius:6px"></canvas><div style="color:#bbb;font:600 13px system-ui;text-align:center;margin-top:8px">💻 ${lbL('Mokslininkų kompiuteris', 'The scientists’ computer')} · <b>Space</b>/<b>↑</b> ${lbL('šokti', 'jump')} · <b>↓</b> ${lbL('pasilenkti', 'duck')} · <b>Esc</b> ${lbL('išjungti', 'turn off')}</div></div>`;
+    document.body.appendChild(d); DN.el = d; DN.cv = d.querySelector('canvas'); DN.x = DN.cv.getContext('2d'); d.addEventListener('mousedown', e => { e.stopPropagation(); if (e.target === d) dnClose(); else dnJump(); }); }
+  DN.el.hidden = false; DN.st = 'wait'; dnReset(); DN.last = performance.now(); cancelAnimationFrame(DN.raf); DN.raf = requestAnimationFrame(dnLoop);
+  tone(520, 0.08, { type: 'square', vol: 0.03 });
+}
+function dnClose() { DN.open = false; if (DN.el) DN.el.hidden = true; cancelAnimationFrame(DN.raf); card = null; for (const k in keys) keys[k] = false; }
+function dnReset() { DN.y = 0; DN.vy = 0; DN.obs = []; DN.sp = 380; DN.next = 1.2; DN.dist = 0; DN.t = 0; DN.duck = false; }
+function dnJump() { if (DN.st === 'wait' || DN.st === 'over') { if (DN.st === 'over' && DN.t < 0.5) return; dnReset(); DN.st = 'run'; } if (DN.y === 0 && !DN.duck) { DN.vy = 760; tone(700, 0.06, { to: 900, type: 'square', vol: 0.025 }); } }
+const dnScore = () => Math.floor(DN.dist / 40);
+function dnLoop(now) {
+  if (!DN.open) return; const dt = Math.min(0.05, (now - DN.last) / 1000); DN.last = now; DN.t += dt; DN.raf = requestAnimationFrame(dnLoop);
+  if (DN.st === 'run') {
+    DN.vy -= (DN.duck && DN.y > 0 ? 6000 : 2600) * dt; DN.y = Math.max(0, DN.y + DN.vy * dt); if (DN.y === 0) DN.vy = 0;
+    const s0 = dnScore(); DN.sp = Math.min(950, DN.sp + 9 * dt); DN.dist += DN.sp * dt;
+    DN.next -= dt; if (DN.next <= 0) { const sc = dnScore(), bird = sc > 250 && Math.random() < 0.3;
+      if (bird) DN.obs.push({ k: 'bird', x: 660, w: 40, h: 26, y: [10, 38, 66][Math.floor(Math.random() * 3)] });
+      else { const n = 1 + Math.floor(Math.random() * (sc > 150 ? 3 : 2)), big = Math.random() < 0.45; DN.obs.push({ k: 'cac', x: 660, w: n * (big ? 22 : 16), h: big ? 46 : 32, n, big }); }
+      DN.next = (0.75 + Math.random() * 1.0) * (480 / DN.sp) + 0.35; }
+    for (const o of DN.obs) o.x -= DN.sp * dt * (o.k === 'bird' ? 1.08 : 1); DN.obs = DN.obs.filter(o => o.x > -80);
+    const dh = DN.duck && DN.y === 0 ? 26 : 44, dw = DN.duck && DN.y === 0 ? 56 : 40, bx0 = 54 + 6, bx1 = 54 + dw - 8, by0 = DN.y + 4, by1 = DN.y + dh - 6;
+    for (const o of DN.obs) { const ox0 = o.x + 4, ox1 = o.x + o.w - 4, oy0 = (o.k === 'bird' ? o.y : 0) + 2, oy1 = (o.k === 'bird' ? o.y : 0) + o.h - 4;
+      if (bx1 > ox0 && bx0 < ox1 && by1 > oy0 && by0 < oy1) { DN.st = 'over'; DN.t = 0; noiseHit(0.15, { f: 600, vol: 0.08 }); tone(180, 0.3, { to: 90, type: 'square', vol: 0.04 }); const sc = dnScore();
+        if (sc > DN_BEST) { const first = DN_BEST < DN_GOAL && sc >= DN_GOAL; DN_BEST = sc; try { localStorage.setItem('modly-dino', String(sc)); } catch (_) { } if (first) setTimeout(() => toast(lbL('🦖 Pasiekimas: Nėra interneto!', '🦖 Achievement: No internet!'), lbL(`${sc} taškų dinozauro žaidime`, `${sc} points in the dinosaur game`), '#ffd23a'), 300); }
+        break; } }
+    if (Math.floor(dnScore() / 100) > Math.floor(s0 / 100) || (dnScore() >= DN_GOAL && s0 < DN_GOAL)) tone(dnScore() >= DN_GOAL && s0 < DN_GOAL ? 1046 : 880, 0.1, { type: 'square', vol: 0.03 });
+    if (dnScore() >= DN_GOAL && s0 < DN_GOAL && DN_BEST < DN_GOAL) { DN_BEST = dnScore(); try { localStorage.setItem('modly-dino', String(DN_BEST)); } catch (_) { } toast(lbL('🦖 Pasiekimas: Nėra interneto!', '🦖 Achievement: No internet!'), lbL(`${DN_GOAL} taškų!`, `${DN_GOAL} points!`), '#ffd23a'); }
+  }
+  dnDraw();
+}
+function dnDraw() {
+  const x = DN.x, W = 640, H = 200, gy = DN_G, c = '#535353'; x.fillStyle = '#f7f7f7'; x.fillRect(0, 0, W, H);
+  // the ground with little stones, clouds
+  x.fillStyle = c; x.fillRect(0, gy, W, 2); const off = DN.dist % 640; for (let i = 0; i < 24; i++) { const px = ((i * 97 + 13) % 640 - off + 640) % 640; x.fillRect(px, gy + 6 + (i % 3) * 4, 3 + (i % 4), 1.5); }
+  x.fillStyle = '#d8d8d8'; for (let i = 0; i < 3; i++) { const px = ((i * 260 + 100) - DN.dist * 0.15 % 780 + 780) % 780 - 70; x.fillRect(px, 30 + i * 18, 46, 10); x.fillRect(px + 10, 24 + i * 18, 24, 8); }
+  // obstacles
+  x.fillStyle = c; for (const o of DN.obs) { if (o.k === 'cac') { const cw = o.w / o.n; for (let i = 0; i < o.n; i++) { const cx = o.x + i * cw, h = o.h - (i % 2) * 6; x.fillRect(cx + cw * 0.35, gy - h, cw * 0.3, h); x.fillRect(cx + cw * 0.08, gy - h * 0.7, cw * 0.18, h * 0.32); x.fillRect(cx + cw * 0.08, gy - h * 0.42, cw * 0.4, cw * 0.14); x.fillRect(cx + cw * 0.74, gy - h * 0.82, cw * 0.18, h * 0.34); x.fillRect(cx + cw * 0.55, gy - h * 0.52, cw * 0.37, cw * 0.14); } }
+    else { const by = gy - o.y - o.h, up = Math.sin(DN.t * 14) > 0; x.fillRect(o.x + 8, by + 10, 26, 8); x.fillRect(o.x, by + 8, 12, 6); x.fillRect(o.x + 34, by + 12, 6, 4); if (up) x.fillRect(o.x + 14, by, 10, 12); else x.fillRect(o.x + 14, by + 16, 10, 12); } }
+  // the dinosaur (blocky, my own)
+  const dk = DN.duck && DN.y === 0 && DN.st === 'run', top = gy - DN.y, run = DN.st === 'run' && DN.y === 0, lg = run ? Math.floor(DN.t * 12) % 2 : -1, dx = 54;
+  if (!dk) { x.fillRect(dx + 20, top - 44, 22, 14); x.fillRect(dx + 6, top - 32, 26, 20); x.fillRect(dx, top - 30, 8, 8); x.fillRect(dx + 30, top - 26, 6, 3); x.fillRect(dx + 10, top - 12, 5, lg === 0 ? 6 : 12); x.fillRect(dx + 22, top - 12, 5, lg === 1 ? 6 : 12); x.fillStyle = '#f7f7f7'; x.fillRect(dx + 25, top - 41, 4, 4); if (DN.st === 'over') { x.fillStyle = c; x.fillRect(dx + 26, top - 40, 2, 2); } x.fillStyle = c; }
+  else { x.fillRect(dx, top - 24, 42, 14); x.fillRect(dx + 38, top - 28, 18, 12); x.fillRect(dx + 8, top - 10, 5, lg === 0 ? 4 : 10); x.fillRect(dx + 24, top - 10, 5, lg === 1 ? 4 : 10); x.fillStyle = '#f7f7f7'; x.fillRect(dx + 46, top - 26, 3, 3); x.fillStyle = c; }
+  // score
+  x.font = 'bold 16px monospace'; x.textAlign = 'right'; const pad = n => String(n).padStart(5, '0'); x.fillStyle = '#888'; x.fillText('HI ' + pad(DN_BEST), W - 90, 24); x.fillStyle = c; x.fillText(pad(dnScore()), W - 14, 24);
+  x.textAlign = 'center';
+  if (DN.st === 'wait') { x.font = 'bold 18px sans-serif'; x.fillText(lbL('Nėra interneto. Spausk SPACE – žaisti', 'No internet. Press SPACE to play'), W / 2, 80); x.font = '14px sans-serif'; x.fillStyle = '#888'; x.fillText(lbL(`Pasiekimas – ${DN_GOAL} taškų`, `Achievement – ${DN_GOAL} points`), W / 2, 104); }
+  if (DN.st === 'over') { x.font = 'bold 22px monospace'; x.fillText('G A M E   O V E R', W / 2, 74); x.font = '14px sans-serif'; x.fillStyle = '#888'; x.fillText(lbL('SPACE – iš naujo', 'SPACE – again'), W / 2, 100); }
+}
+addEventListener('keydown', e => {
+  if (!DN.open) return; e.stopImmediatePropagation(); e.preventDefault(); if (e.repeat) return;
+  if (e.code === 'Escape' || e.code === 'KeyE') { dnClose(); return; }
+  if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') dnJump();
+  if ((e.code === 'ArrowDown' || e.code === 'KeyS') && DN.st === 'run') DN.duck = true;
+}, true);
+addEventListener('keyup', e => { if (!DN.open) return; if (e.code === 'ArrowDown' || e.code === 'KeyS') DN.duck = false; e.stopImmediatePropagation(); }, true);
+addEventListener('mousedown', e => { if (!DN.open) return; e.stopImmediatePropagation(); dnJump(); }, true);
+fx.push(() => { if (DN.open && mode !== 'lab') dnClose(); return true; });
+setTimeout(() => { try { if (typeof ACH !== 'undefined') ACH.push({ id: 'dino', ic: '🦖', lt: 'Nėra interneto', en: 'No internet', dlt: `Mokslininkų kompiuteryje surink ${DN_GOAL} taškų dinozauro žaidime`, den: `Get ${DN_GOAL} points in the dinosaur game on the scientists’ computer`, ok: () => DN_BEST >= DN_GOAL }); } catch (_) { } }, 0);
 </script>
 </html>
