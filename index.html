@@ -19779,5 +19779,83 @@ fx.push(() => { if (DN.open && mode !== 'lab') dnClose(); return true; });
 setTimeout(() => { try { if (typeof ACH !== 'undefined') ACH.push({ id: 'dino', ic: '🦖', lt: 'Nėra interneto', en: 'No internet', dlt: `Mokslininkų kompiuteryje surink ${DN_GOAL} taškų dinozauro žaidime`, den: `Get ${DN_GOAL} points in the dinosaur game on the scientists’ computer`, ok: () => DN_BEST >= DN_GOAL }); } catch (_) { } }, 0);
 
 fx.push(() => { if (mode !== 'lab' && LB.big) lbMakeSmall(); return true; });
+
+// ================= PLAY ON A PHONE 📱 =================
+// On a touch screen: no keyboard help table and no biome card; instead a joystick (walk, push far = run),
+// drag on the screen = look around, and buttons: jump, both hands, E, car (F), get in (R), menu and a key pad with the rest.
+const MOB = (() => { try { const q = new URLSearchParams(location.search); if (q.get('mobile') === '1' || localStorage.getItem('modly-mobile') === '1') return true; } catch (_) { }
+  return (matchMedia && matchMedia('(pointer: coarse)').matches) || (navigator.maxTouchPoints > 0 && !(matchMedia && matchMedia('(pointer: fine)').matches)); })();
+if (MOB) {
+  document.body.classList.add('mob');
+  try { let m = document.querySelector('meta[name=viewport]'); if (!m) { m = document.createElement('meta'); m.name = 'viewport'; document.head.appendChild(m); } m.content = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover'; } catch (_) { }
+  const st = document.createElement('style');
+  st.textContent = `
+body.mob #keys, body.mob #biome, body.mob .startCard .ctl, body.mob .startCard .note { display:none !important }
+body.mob, body.mob canvas { touch-action:none; -webkit-user-select:none; user-select:none; overscroll-behavior:none }
+body.mob #mapWrap { transform:scale(.5); transform-origin:top right }
+body.mob #muteBtn { display:none }
+body.mob #money { margin-top:52px }
+body.mob .startCard { max-height:92vh; overflow:auto }
+#mobUI { position:fixed; inset:0; z-index:20; pointer-events:none; font-family:system-ui,sans-serif }
+#mobUI .mb { position:absolute; pointer-events:auto; display:flex; align-items:center; justify-content:center; border-radius:50%;
+  background:rgba(14,20,36,.55); border:2px solid rgba(255,255,255,.35); color:#fff; font:800 20px system-ui; -webkit-tap-highlight-color:transparent; touch-action:none }
+#mobUI .mb.on { background:rgba(125,255,107,.55); border-color:#7dff6b }
+#mobJoy { position:absolute; left:calc(22px + env(safe-area-inset-left)); bottom:calc(22px + env(safe-area-inset-bottom)); width:136px; height:136px; border-radius:50%;
+  background:rgba(14,20,36,.35); border:2px solid rgba(255,255,255,.3); pointer-events:auto; touch-action:none }
+#mobKnob { position:absolute; left:40px; top:40px; width:56px; height:56px; border-radius:50%; background:rgba(255,255,255,.55); border:2px solid #fff }
+#mobPad { position:absolute; left:12px; top:62px; display:none; grid-template-columns:repeat(5,44px); gap:6px; pointer-events:auto;
+  background:rgba(14,20,36,.75); padding:8px; border-radius:14px; border:1px solid rgba(255,255,255,.25) }
+#mobPad.open { display:grid }
+#mobPad button { width:44px; height:40px; border-radius:10px; border:1px solid rgba(255,255,255,.35); background:rgba(255,255,255,.12); color:#fff; font:800 15px system-ui; touch-action:none }
+#mobPad button.on { background:rgba(125,255,107,.55) }
+`;
+  document.head.appendChild(st);
+  // no mouse lock on a phone – the camera turns with your finger
+  lockFailed = true; requestLock = () => { };
+  const ui = document.createElement('div'); ui.id = 'mobUI'; ui.hidden = true; document.body.appendChild(ui);
+  const kd = (code, down) => { const key = code === 'Space' ? ' ' : code.startsWith('Key') ? code.slice(3).toLowerCase() : code.startsWith('Digit') ? code.slice(5) : code;
+    try { document.body.dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code, key, bubbles: true, cancelable: true })); } catch (_) { } };
+  const held = {}; const hold = (code, on) => { if (!!held[code] === on) return; held[code] = on; kd(code, on); };
+  // the joystick
+  const joy = document.createElement('div'); joy.id = 'mobJoy'; joy.innerHTML = '<div id="mobKnob"></div>'; ui.appendChild(joy); const knob = joy.querySelector('#mobKnob');
+  let jId = null, jc = [0, 0];
+  const joyMove = (x, y) => { let dx = x - jc[0], dy = y - jc[1]; const d = Math.hypot(dx, dy), m = 50; if (d > m) { dx *= m / d; dy *= m / d; }
+    knob.style.left = (40 + dx) + 'px'; knob.style.top = (40 + dy) + 'px'; const t = 16;
+    hold('KeyW', dy < -t); hold('KeyS', dy > t); hold('KeyA', dx < -t); hold('KeyD', dx > t); hold('ShiftLeft', d > 47); };
+  const joyEnd = () => { jId = null; knob.style.left = knob.style.top = '40px'; ['KeyW', 'KeyS', 'KeyA', 'KeyD', 'ShiftLeft'].forEach(c => hold(c, false)); };
+  joy.addEventListener('touchstart', e => { e.preventDefault(); const t = e.changedTouches[0]; jId = t.identifier; const r = joy.getBoundingClientRect(); jc = [r.left + r.width / 2, r.top + r.height / 2]; joyMove(t.clientX, t.clientY); }, { passive: false });
+  joy.addEventListener('touchmove', e => { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === jId) joyMove(t.clientX, t.clientY); }, { passive: false });
+  for (const ev of ['touchend', 'touchcancel']) joy.addEventListener(ev, e => { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === jId) joyEnd(); }, { passive: false });
+  // buttons
+  const btn = (label, css, down, up, size) => { const b = document.createElement('div'); b.className = 'mb'; b.innerHTML = label; const s = size || 58; b.style.cssText = `width:${s}px;height:${s}px;${css}`; ui.appendChild(b);
+    b.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); b.classList.add('on'); try { down && down(); } catch (er) { console.error(er); } }, { passive: false });
+    for (const ev of ['touchend', 'touchcancel']) b.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); b.classList.remove('on'); try { up && up(); } catch (er) { console.error(er); } }, { passive: false });
+    return b; };
+  const tap = code => [() => kd(code, true), () => kd(code, false)];
+  const R0 = 'calc(18px + env(safe-area-inset-right))', B0 = 'calc(20px + env(safe-area-inset-bottom))';
+  btn('⬆', `right:${R0};bottom:${B0};font-size:30px`, () => hold('Space', true), () => hold('Space', false), 78);
+  btn('✋', `right:calc(108px + env(safe-area-inset-right));bottom:${B0}`, () => { if (started) handDown('L'); }, () => handUp('L'));
+  btn('🤚', `right:${R0};bottom:calc(112px + env(safe-area-inset-bottom))`, () => { if (started) handDown('R'); }, () => handUp('R'));
+  btn('E', `right:calc(100px + env(safe-area-inset-right));bottom:calc(96px + env(safe-area-inset-bottom))`, ...tap('KeyE'));
+  btn('🚗', `right:calc(176px + env(safe-area-inset-right));bottom:calc(30px + env(safe-area-inset-bottom));font-size:22px`, ...tap('KeyF'), 50);
+  btn('R', `right:calc(176px + env(safe-area-inset-right));bottom:calc(92px + env(safe-area-inset-bottom))`, ...tap('KeyR'), 50);
+  btn('☰', `left:12px;top:12px`, () => { try { if (typeof pauseOpen !== 'undefined' && pauseOpen) closePause(false); else openPause(); } catch (_) { kd('Escape', true); kd('Escape', false); } }, null, 44);
+  // the key pad with everything else
+  const pad = document.createElement('div'); pad.id = 'mobPad'; ui.appendChild(pad);
+  btn('⌨', `left:62px;top:12px;font-size:18px`, () => pad.classList.toggle('open'), null, 44);
+  for (const k of ['1', '2', '3', '4', '5', 'Q', 'T', 'V', 'X', 'G', 'I', 'J', 'O', 'U', 'C', 'B', 'Z', 'K', 'L', 'P', 'M', 'H', 'N', 'Y', 'Esc']) {
+    const code = k === 'Esc' ? 'Escape' : /\d/.test(k) ? 'Digit' + k : 'Key' + k, b = document.createElement('button'); b.textContent = k; pad.appendChild(b);
+    b.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); b.classList.add('on'); kd(code, true); }, { passive: false });
+    b.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); b.classList.remove('on'); kd(code, false); if (code !== 'Escape') pad.classList.remove('open'); }, { passive: false }); }
+  // drag on the screen = look around (tap = nothing, so no accidental hands)
+  let lId = null, lp = [0, 0];
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); if (lId === null) { const t = e.changedTouches[0]; lId = t.identifier; lp = [t.clientX, t.clientY]; } }, { passive: false });
+  canvas.addEventListener('touchmove', e => { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === lId) { const dx = t.clientX - lp[0], dy = t.clientY - lp[1]; lp = [t.clientX, t.clientY]; if (started && !card) try { look(dx * 2.4, dy * 2.4); } catch (_) { } } }, { passive: false });
+  for (const ev of ['touchend', 'touchcancel']) canvas.addEventListener(ev, e => { for (const t of e.changedTouches) if (t.identifier === lId) lId = null; }, { passive: false });
+  // show the buttons only while you play
+  fx.push(() => { const show = started && mode !== 'attract'; if (ui.hidden === show) ui.hidden = !show; if (!show) { joyEnd(); } return true; });
+  // a tap on the page puts the game in fullscreen (phones hide the address bar then)
+  let fsTried = false; addEventListener('touchend', () => { if (fsTried || !started) return; fsTried = true; try { if (!document.fullscreenElement && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => { }); } catch (_) { } }, { passive: true });
+}
 </script>
 </html>
