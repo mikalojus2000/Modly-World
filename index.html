@@ -19850,11 +19850,17 @@ body.mob .startCard { max-height:92vh; overflow:auto }
     const code = k === 'Esc' ? 'Escape' : /\d/.test(k) ? 'Digit' + k : 'Key' + k, b = document.createElement('button'); b.textContent = k; pad.appendChild(b);
     b.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); b.classList.add('on'); kd(code, true); }, { passive: false });
     b.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); b.classList.remove('on'); kd(code, false); if (code !== 'Escape') pad.classList.remove('open'); }, { passive: false }); }
-  // drag on the screen = look around (tap = nothing, so no accidental hands)
+  // drag ANYWHERE on the screen (not on a button) = look around, like Roblox:
+  // a full swipe across the screen turns you about half way round – fast enough, but never crazy
   let lId = null, lp = [0, 0];
-  canvas.addEventListener('touchstart', e => { e.preventDefault(); if (lId === null) { const t = e.changedTouches[0]; lId = t.identifier; lp = [t.clientX, t.clientY]; } }, { passive: false });
-  canvas.addEventListener('touchmove', e => { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === lId) { const dx = t.clientX - lp[0], dy = t.clientY - lp[1]; lp = [t.clientX, t.clientY]; if (started && !card) try { look(dx * 2.4, dy * 2.4); } catch (_) { } } }, { passive: false });
-  for (const ev of ['touchend', 'touchcancel']) canvas.addEventListener(ev, e => { for (const t of e.changedTouches) if (t.identifier === lId) lId = null; }, { passive: false });
+  const lookable = el => el === canvas || el === document.body || el === document.documentElement || (el && el.closest && el.closest('#hud') && !el.closest('button,input,textarea,select,a,#card,#shop'));
+  document.addEventListener('touchstart', e => { if (lId !== null || !started) return; for (const t of e.changedTouches) { if (!lookable(t.target)) continue; lId = t.identifier; lp = [t.clientX, t.clientY]; if (e.cancelable) e.preventDefault(); break; } }, { passive: false });
+  document.addEventListener('touchmove', e => { for (const t of e.changedTouches) if (t.identifier === lId) { if (e.cancelable) e.preventDefault();
+      const dx = t.clientX - lp[0], dy = t.clientY - lp[1]; lp = [t.clientX, t.clientY];
+      if (!started || (card && (card.kind === 'dino' || card.kind === 'labcode'))) continue;
+      const radPx = 3.3 / Math.max(innerWidth, innerHeight);   // ≈190° for a swipe across the long side
+      try { look(dx * radPx / 0.0024, dy * radPx * 0.75 / 0.0022); } catch (_) { } } }, { passive: false });
+  for (const ev of ['touchend', 'touchcancel']) document.addEventListener(ev, e => { for (const t of e.changedTouches) if (t.identifier === lId) lId = null; }, { passive: false });
   // show the buttons only while you play
   fx.push(() => { const show = started && mode !== 'attract'; if (ui.hidden === show) ui.hidden = !show; if (!show) { joyEnd(); } return true; });
   // a tap on the page puts the game in fullscreen (phones hide the address bar then)
