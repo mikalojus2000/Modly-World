@@ -18043,6 +18043,7 @@ const GIFTS = [
   { id: 'as nesu gejus-1', to: 'as nesu gejus', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, all: true, lab: true, note: 'VISAS ŽAIDIMAS PEREITAS! Visi įsakymai įvykdyti. Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'THE WHOLE GAME IS FINISHED! All commands done. All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
   { id: 'as nesu gejus-2', to: 'as nesu gejus', labReset: true, note: 'Mokslininkai tave vėl pagavo! Pabėk iš jų namų iš naujo 🔬', note_en: 'The scientists caught you again! Escape from their house again 🔬' },
   { id: 'as nesu gejus-3', to: 'as nesu gejus', labReset: true, note: 'Mokslininkai tave vėl pagavo! Pabėk iš jų namų iš naujo 🔬', note_en: 'The scientists caught you again! Escape from their house again 🔬' },
+  { id: 'as nesu gejus-phone', to: 'as nesu gejus', phone: true, note: 'Telefonas! Spausk P 📱', note_en: 'A phone! Press P 📱' },
   { id: 'l l l-1', to: 'l l l', money: 100000, cars: 'all', skins: 'all', pets: 'all', backs: 'all', max: true, all: true, note: 'VISAS ŽAIDIMAS PEREITAS! Visi įsakymai įvykdyti. Visos mašinos, kostiumai, gyvūnai, sparnai, galios 1–5, tu – DIEVAS 👑', note_en: 'THE WHOLE GAME IS FINISHED! All commands done. All cars, costumes, animals, wings, powers 1–5, you are a GOD 👑' },
   // { id: 'g1', to: 'vardas', money: 10000, cars: ['rocket'], skins: ['king'], pets: ['unicorn'], backs: ['wings'], note: 'Ačiū, kad žaidi!' },
 ];
@@ -18075,6 +18076,8 @@ fx.push(() => {
       if (typeof phoneRead !== 'undefined') { phoneRead = true; try { localStorage.setItem('modly-phone-read', '1'); } catch (_) { } }
       for (const f of ['refreshDemonQuest', 'refreshSpaceRamp', 'refreshGodPhone', 'refreshSeaGate', 'refreshChecklist']) { try { const fn = eval(`typeof ${f} === 'function' ? ${f} : null`); if (fn) fn(); } catch (_) { } }
     } catch (e) { console.error(e); } }
+  // the phone (P)
+  if (g.phone || g.all) setTimeout(() => { try { if (typeof Q19 !== 'undefined') { Q19.has = true; if (!Q19.num) Q19.num = '-123 4242'; saveQ19(); } } catch (e) { console.error(e); } }, 500);
   // back to the scientists' house – everything there starts again from the beginning
   if (g.labReset) setTimeout(() => { try { if (typeof labRestart === 'function') labRestart(); } catch (e) { console.error(e); } }, 3500);
   // the scientists come right away (their house is NOT done yet)
